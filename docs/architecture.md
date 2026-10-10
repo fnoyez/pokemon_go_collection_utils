@@ -1,0 +1,77 @@
+# Architecture — Pokémon GO Collection Utils
+
+## Overview
+
+- Local-first, single-user application, built like the sibling `activity_management` application.
+- Storage: one SQLite database file, accessed with direct SQL (no ORM).
+- Interface: a Streamlit application, one tab per feature. The Shundos tab is the first.
+- Services: plain Python modules for building the catalog, refreshing its sources, recording the collection and taking backups, free of any Streamlit code.
+- CLI: initializing the database, taking a backup, and refreshing the catalog.
+
+## Module layout
+
+- `run_app.py` — the file `streamlit run` starts; sets up logging and calls `app.main`.
+- `src/pokemon_go_collection/app.py` — the Streamlit page: configuration, database initialization, automatic backup and refresh, tabs.
+- `src/pokemon_go_collection/config.py` — configuration: paths and refresh period.
+- `src/pokemon_go_collection/db.py` — connection helpers.
+- `src/pokemon_go_collection/migrate.py` and `migrations/` — the migration runner and the schema.
+- `src/pokemon_go_collection/regions.py` — the regions and the National Pokédex numbers each introduced.
+- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `icons.py`.
+- `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
+- `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog table), `shundos.py` (reading and recording the collection), `backups.py`.
+- `src/pokemon_go_collection/ui_shundos.py` — the Shundos tab.
+- `src/pokemon_go_collection/components/pokemon_grid/` — the clickable icon grid, a Streamlit component (below).
+- `src/pokemon_go_collection/cli.py` — the CLI entry points.
+- `scripts/seed_national_dex.py` — writes `data/national_dex.csv` from PokeAPI.
+- `data/` — the committed reference data: the National Pokédex seed and the hand-maintained overrides.
+
+## Storage and configuration
+
+- Application home: `~/.pokemon_go_collection`.
+- Database file: `~/.pokemon_go_collection/collection.sqlite`.
+- Source snapshots: `~/.pokemon_go_collection/sources/`, the last successfully fetched copy of each downloaded source.
+- Backup folder: `/home/pavel/Data/Projects/data/.pokemon_go_collection_db_backup`.
+- Icon cache: `static/icons/` in the repository, ignored by git. Streamlit serves files only from a `static` folder next to the script it runs, so the cache lives there rather than in the application home; it holds nothing that a refresh cannot download again.
+- Game master repository: `../game_masters`, next to this repository.
+
+Paths are validated at startup, and the application stops with an error when one is invalid. The backup folder has to exist beforehand.
+
+## Data model
+
+The schema is the ordered sequence of modules under `src/pokemon_go_collection/migrations/`, each exposing `upgrade(conn)`; the runner works as `activity_management`'s does (its `docs/architecture.md`, *Schema migrations*). Its tables:
+
+- `POKEMON_ENTRY` — the catalog, one row per entry, rebuilt by each refresh. Rows are updated in place, so an entry keeps its identifier from one refresh to the next.
+- `SHUNDO` — the collection's shundos, one row per owned entry, referring to `POKEMON_ENTRY`.
+- `CATALOG_REFRESH` — one row per refresh, with the game master timestamp it used and its outcome.
+- `BACKUP_EVENT` — one row per backup taken.
+
+A refresh whose new catalog no longer holds an entry the collection owns fails, naming the entry, rather than deleting what the collection records. A form disappearing from the sources is a change to look into, and `data/form_overrides.csv` is where it is resolved.
+
+## Backups
+
+As in `activity_management` (its `docs/backup_strategy.md`): the SQLite backup API copies the database while the application runs, one automatic backup is taken per day when the application starts, retention keeps the last 30 daily, 12 monthly and 5 yearly automatic backups, and a backup taken before applying migrations is never pruned. Manual backups are taken from the sidebar or the CLI.
+
+## Data refresh
+
+A refresh brings the catalog up to date with its sources:
+
+1. Pull the game master repository (`git pull --ff-only`).
+2. Download the PvPoke game master and the LeekDuck shiny data, replacing their snapshots.
+3. Rebuild the catalog from the sources and write it to `POKEMON_ENTRY`, in one transaction.
+4. Download the icons missing from the cache.
+5. Record the refresh in `CATALOG_REFRESH`.
+
+A source that cannot be reached (no network, a site down) leaves its last snapshot in use, and the refresh records a warning; a refresh with no snapshot at all to fall back on fails.
+
+The application runs a refresh when it starts and the last successful one is older than the refresh period (7 days by default). A refresh is also started from the sidebar, or with the CLI.
+
+## The icon grid
+
+Marking a shundo is a click on the Pokémon's icon. Streamlit's own widgets cannot do this at the scale of the catalog: an image is not clickable, and over a thousand checkboxes would redraw the whole page at every click. The grid is therefore a Streamlit component (`st.components.v2`): HTML, CSS and JavaScript held in the repository, with no frontend build step.
+
+- Python passes the component the entries to show, grouped and ordered, with their state and icon URL.
+- A click on a markable icon toggles it in the browser immediately, and sends the entry's identifier to Python, which records the change in `SHUNDO`.
+- The tab redraws inside a Streamlit fragment, so a click does not rerun the rest of the page.
+
+The tab around the grid holds a filter (all, missing, owned), a search on names, and the count of owned and markable entries per region.
+

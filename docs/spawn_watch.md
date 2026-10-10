@@ -25,7 +25,7 @@ A search for shinies of the user's account needs the account's login token, whic
 
 ## A check
 
-1. Build the search from the hunt list: `species_forms` holds the service's identifier of every form the hunt list's entries stand for, matched by Pokédex number and game master form name; a species having an entry with a form the service does not list is asked for whole, in `pokemon_ids`. The search asks for shinies of the account (`shiny_only`), a 100% minimum IV, sorted by IV. A search on a form matches the spawns the service reports without a form, such as every ordinary Zorua for `ZORUA_NORMAL`.
+1. Build the search from the hunt list: `species_forms` holds the service's identifier of every form the hunt list's entries stand for, matched by Pokédex number and game master form name; a species having an entry none of whose forms the service lists is asked for whole, in `pokemon_ids`. The search asks for shinies of the account (`shiny_only`), a 100% minimum IV, sorted by IV. A search on a form matches the spawns the service reports without a form, such as every ordinary Zorua for `ZORUA_NORMAL`.
 2. Search.
 3. Match each spawn to a hunt list entry. A spawn without a form is the form whose service name ends in `_NORMAL`, or the species' only form; one with a form is matched through the service's catalog by form name, suffix or identifier. A spawn matching no hunt list entry is dropped, and so is one despawning within a minute. A spawn whose form matches nothing in the service's catalog is kept when its species has an entry on the hunt list, with the form as the service gives it in the alert, rather than being dropped on a form name the matching does not know.
 4. Leave out the spawns already alerted, by `encounter_id`.

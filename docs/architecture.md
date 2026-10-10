@@ -6,7 +6,7 @@
 - Storage: one SQLite database file, accessed with direct SQL (no ORM).
 - Interface: a Streamlit application, one tab per feature. The Shundos tab is the first.
 - Services: plain Python modules for building the catalog, refreshing its sources, recording the collection and taking backups, free of any Streamlit code.
-- CLI: initializing the database, taking a backup, and refreshing the catalog.
+- CLI: initializing the database, taking a backup, refreshing the catalog, and running one spawn check (`pgcollection-spawn-check`), which refuses to run within the minimum interval of the last check.
 
 ## Module layout
 

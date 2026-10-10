@@ -22,6 +22,10 @@ class AppConfig:
     data_folder_path: pathlib.Path
     game_master_repository_folder_path: pathlib.Path
     refresh_period_duration: datetime.timedelta
+    # The browser profile the spawn watch logs in to pogocoordinates.com with.
+    login_browser_profile_folder_path: pathlib.Path
+    pogocoordinates_token_file_path: pathlib.Path
+    discord_webhook_url_file_path: pathlib.Path
 
 
 def load_config(
@@ -51,4 +55,13 @@ def load_config(
         data_folder_path=repository_folder_path / "data",
         game_master_repository_folder_path=game_master_repository_folder_path,
         refresh_period_duration=refresh_period_duration,
+        login_browser_profile_folder_path=(
+            app_home_folder_path / "pogocoordinates_browser_profile"
+        ),
+        pogocoordinates_token_file_path=(
+            app_home_folder_path / "secrets" / "pogocoordinates_token"
+        ),
+        discord_webhook_url_file_path=(
+            app_home_folder_path / "secrets" / "discord_webhook_url"
+        ),
     )

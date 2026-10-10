@@ -1,13 +1,16 @@
 import datetime
 import logging
+import threading
 
 import streamlit as st
 
 from pokemon_go_collection import config as config_m
 from pokemon_go_collection import migrate as migrate_m
 from pokemon_go_collection import ui_shundos as ui_shundos_m
+from pokemon_go_collection import ui_spawn_watch as ui_spawn_watch_m
 from pokemon_go_collection.services import backups as backups_m
 from pokemon_go_collection.services import refresh as refresh_m
+from pokemon_go_collection.services import spawn_watch as spawn_watch_m
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +30,7 @@ def main():
         return
 
     backups_m.run_auto_backup(cfg.db_file_path, cfg.backup_folder_path)
+    _start_spawn_watch(cfg)
     if refresh_m.is_refresh_due(
         cfg.db_file_path,
         cfg.refresh_period_duration,
@@ -38,9 +42,26 @@ def main():
         _render_sidebar(cfg)
 
     st.title("Pokémon GO Collection")
-    tabs = st.tabs(["Shundos"])
-    with tabs[0]:
+    shundos_tab, spawn_watch_tab = st.tabs(["Shundos", "Spawn watch"])
+    with shundos_tab:
         ui_shundos_m.render_shundos_page(cfg.db_file_path)
+    with spawn_watch_tab:
+        ui_spawn_watch_m.render_spawn_watch_page(cfg)
+
+
+# Cached as a resource, the watch starts once per server process and runs as
+# long as it does. The leading underscore keeps the argument out of the cache key.
+@st.cache_resource
+def _start_spawn_watch(_cfg):
+    stop_event = threading.Event()
+    threading.Thread(
+        target=spawn_watch_m.run_spawn_watch_loop,
+        args=(_cfg, stop_event),
+        name="spawn-watch",
+        daemon=True,
+    ).start()
+    logger.info("Spawn watch started")
+    return stop_event
 
 
 def _run_refresh(cfg):

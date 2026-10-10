@@ -8,6 +8,7 @@ from pokemon_go_collection import logging_setup as logging_setup_m
 from pokemon_go_collection import migrate as migrate_m
 from pokemon_go_collection.services import backups as backups_m
 from pokemon_go_collection.services import refresh as refresh_m
+from pokemon_go_collection.services import spawn_watch as spawn_watch_m
 
 
 def main_init():
@@ -61,3 +62,24 @@ def main_refresh():
     migrate_m.init_db(cfg.db_file_path, backup_folder_path=cfg.backup_folder_path)
     outcome = refresh_m.run_refresh(cfg, datetime.datetime.now(datetime.timezone.utc))
     print(f"Catalog refreshed: {outcome.entries_nb} entries")
+
+
+def main_spawn_check():
+    args = _parse_args(
+        "pgcollection-spawn-check",
+        "Run one spawn check now, whether the watch is on or not",
+    )
+    cfg = _load_config(args)
+    migrate_m.init_db(cfg.db_file_path, backup_folder_path=cfg.backup_folder_path)
+    now = datetime.datetime.now(datetime.timezone.utc)
+    last_check_time = spawn_watch_m.load_last_check_time(cfg.db_file_path)
+    if (
+        last_check_time is not None
+        and now - last_check_time < spawn_watch_m.MIN_CHECK_INTERVAL_DURATION
+    ):
+        raise SystemExit(
+            f"The last check ran at {last_check_time}: the next one cannot run before "
+            f"{last_check_time + spawn_watch_m.MIN_CHECK_INTERVAL_DURATION}"
+        )
+    outcome = spawn_watch_m.run_spawn_check(cfg, now)
+    print(f"Spawn check: {outcome.status.value}")

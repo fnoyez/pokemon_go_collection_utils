@@ -23,60 +23,70 @@ NATIONAL_DEX_SPECIES = [
         identifier="pikachu",
         name="Pikachu",
         evolves_from_dex_number=None,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=83,
         identifier="farfetchd",
         name="Farfetch'd",
         evolves_from_dex_number=None,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=123,
         identifier="scyther",
         name="Scyther",
         evolves_from_dex_number=None,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=201,
         identifier="unown",
         name="Unown",
         evolves_from_dex_number=None,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=412,
         identifier="burmy",
         name="Burmy",
         evolves_from_dex_number=None,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=413,
         identifier="wormadam",
         name="Wormadam",
         evolves_from_dex_number=412,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=550,
         identifier="basculin",
         name="Basculin",
         evolves_from_dex_number=None,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=865,
         identifier="sirfetchd",
         name="Sirfetch'd",
         evolves_from_dex_number=83,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=900,
         identifier="kleavor",
         name="Kleavor",
         evolves_from_dex_number=123,
+        is_baby=False,
     ),
     national_dex_m.Species(
         dex_number=902,
         identifier="basculegion",
         name="Basculegion",
         evolves_from_dex_number=550,
+        is_baby=False,
     ),
 ]
 
@@ -89,6 +99,7 @@ def make_form(form_id, species_id, dex_number, stats, types, evolutions=()):
         stats=stats,
         types=types,
         evolutions=evolutions,
+        pokemon_class=None,
     )
 
 
@@ -270,6 +281,32 @@ def test_build_catalog_names_entries_and_merges_forms():
         ("FARFETCHD_GALARIAN",),
     )
     assert actual_entries["BASCULEGION"] == ("Basculegion", ("BASCULEGION",))
+
+
+def test_build_catalog_links_evolutions():
+    entries = catalog_m.build_catalog(
+        NATIONAL_DEX_SPECIES,
+        GAME_MASTER,
+        FORM_OVERRIDES,
+        PVPOKE_SPECIES,
+        SHINY_RELEASES,
+        RELEASE_OVERRIDE_ENTRY_IDS,
+    )
+
+    actual_evolutions = {
+        entry.entry_id: entry.evolution_target_entry_ids
+        for entry in entries
+        if entry.evolution_target_entry_ids
+    }
+
+    assert actual_evolutions == {
+        "FARFETCHD_GALARIAN": ("SIRFETCHD",),
+        "SCYTHER": ("KLEAVOR",),
+        "BURMY": ("WORMADAM",),
+        "BURMY_SANDY": ("WORMADAM_SANDY",),
+        # Absent from the game master, linked to its species' base entry.
+        "BASCULIN": ("BASCULEGION",),
+    }
 
 
 def get_build_catalog_statuses_test_data():

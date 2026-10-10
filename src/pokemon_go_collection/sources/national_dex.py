@@ -9,6 +9,8 @@ class Species:
     identifier: str
     name: str
     evolves_from_dex_number: int | None
+    # A baby Pokémon, such as Pichu, hatches from eggs rather than being found in the wild.
+    is_baby: bool
 
 
 def load_national_dex(file_path):
@@ -23,6 +25,7 @@ def load_national_dex(file_path):
                     if row["evolves_from_dex_number"]
                     else None
                 ),
+                is_baby=row["is_baby"] == "1",
             )
             for row in csv.DictReader(file)
         ]

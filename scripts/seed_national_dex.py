@@ -58,6 +58,7 @@ def build_national_dex_rows(species_rows, name_rows, language_id):
             "identifier": row["identifier"],
             "name": names[row["id"]],
             "evolves_from_dex_number": row["evolves_from_species_id"],
+            "is_baby": row["is_baby"],
         }
         for row in species_rows
     ]
@@ -68,7 +69,13 @@ def write_national_dex(file_path, rows):
     with open(file_path, "w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(
             file,
-            fieldnames=["dex_number", "identifier", "name", "evolves_from_dex_number"],
+            fieldnames=[
+                "dex_number",
+                "identifier",
+                "name",
+                "evolves_from_dex_number",
+                "is_baby",
+            ],
         )
         writer.writeheader()
         writer.writerows(rows)

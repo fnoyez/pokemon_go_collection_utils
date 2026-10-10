@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+import enum
 import json
 import logging
 import re
@@ -8,6 +9,22 @@ import subprocess
 logger = logging.getLogger(__name__)
 
 _POKEMON_TEMPLATE_ID_REGEX = re.compile(r"^V(\d{4})_POKEMON_")
+
+
+class PokemonClass(enum.Enum):
+    """The special classes the game master puts some Pokémon in; most are in none."""
+
+    LEGENDARY = "legendary"
+    MYTHICAL = "mythical"
+    ULTRA_BEAST = "ultra_beast"
+
+
+# How the game master names each class.
+_GAME_MASTER_POKEMON_CLASSES = {
+    "POKEMON_CLASS_LEGENDARY": PokemonClass.LEGENDARY,
+    "POKEMON_CLASS_MYTHIC": PokemonClass.MYTHICAL,
+    "POKEMON_CLASS_ULTRA_BEAST": PokemonClass.ULTRA_BEAST,
+}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -21,6 +38,7 @@ class PokemonForm:
     types: tuple[str, ...]
     # (species, form) pairs; the form is None when the evolution names none.
     evolutions: tuple[tuple[str, str | None], ...]
+    pokemon_class: PokemonClass | None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -106,6 +124,13 @@ def _build_pokemon_form(dex_number, pokemon_settings):
         for branch in pokemon_settings.get("evolutionBranch", [])
         if "evolution" in branch
     )
+    # The class names are the game master's own vocabulary, read here directly
+    # rather than passed in.
+    pokemon_class = (
+        _GAME_MASTER_POKEMON_CLASSES[pokemon_settings["pokemonClass"]]
+        if "pokemonClass" in pokemon_settings
+        else None
+    )
     return PokemonForm(
         form_id=pokemon_settings.get("form", pokemon_settings["pokemonId"]),
         species_id=pokemon_settings["pokemonId"],
@@ -113,4 +138,5 @@ def _build_pokemon_form(dex_number, pokemon_settings):
         stats=(stats["baseAttack"], stats["baseDefense"], stats["baseStamina"]),
         types=tuple(types),
         evolutions=evolutions,
+        pokemon_class=pokemon_class,
     )

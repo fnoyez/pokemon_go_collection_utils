@@ -6,6 +6,7 @@ import logging
 from pokemon_go_collection import catalog as catalog_m
 from pokemon_go_collection import db as db_m
 from pokemon_go_collection import regions as regions_m
+from pokemon_go_collection.sources import game_master as game_master_m
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,8 @@ class BoardEntry:
     region: regions_m.Region
     is_variant: bool
     icon_file_name: str | None
+    pokemon_class: game_master_m.PokemonClass | None
+    is_baby: bool
     state: EntryState
 
 
@@ -88,8 +91,8 @@ def load_board_entries(db_file_path, today):
             """
             SELECT
               e.entry_id, e.dex_number, e.name, e.region, e.is_variant,
-              e.icon_file_name, e.is_released, e.shiny_release_date,
-              s.entry_id IS NOT NULL
+              e.icon_file_name, e.pokemon_class, e.is_baby, e.is_released,
+              e.shiny_release_date, s.entry_id IS NOT NULL
             FROM pokemon_entry AS e
             LEFT JOIN shundo AS s ON s.entry_id = e.entry_id
             ORDER BY e.display_order
@@ -103,10 +106,12 @@ def load_board_entries(db_file_path, today):
             region=regions_m.Region(row[3]),
             is_variant=bool(row[4]),
             icon_file_name=row[5],
+            pokemon_class=game_master_m.PokemonClass(row[6]) if row[6] else None,
+            is_baby=bool(row[7]),
             state=find_entry_state(
-                bool(row[6]),
-                datetime.date.fromisoformat(row[7]) if row[7] else None,
                 bool(row[8]),
+                datetime.date.fromisoformat(row[9]) if row[9] else None,
+                bool(row[10]),
                 today,
             ),
         )

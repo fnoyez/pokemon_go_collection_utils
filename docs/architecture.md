@@ -19,7 +19,7 @@
 - `src/pokemon_go_collection/regions.py` — the regions and the National Pokédex numbers each introduced.
 - `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `overrides.py`, `icons.py`; and `http.py`, the download helper they share.
 - `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
-- `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog table), `shundos.py` (reading and recording the collection), `backups.py`.
+- `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog tables), `shundos.py` (reading and recording the collection), `hunt_list.py` (the shundo hunt list), `backups.py`.
 - `src/pokemon_go_collection/ui_shundos.py` — the Shundos tab.
 - `src/pokemon_go_collection/components/pokemon_grid/` — the clickable icon grid, a Streamlit component (below).
 - `src/pokemon_go_collection/cli.py` — the CLI entry points.
@@ -42,6 +42,7 @@ Paths are validated at startup, and the application stops with an error when one
 The schema is the ordered sequence of modules under `src/pokemon_go_collection/migrations/`, each exposing `upgrade(conn)`. At every start, the runner (`migrate.py`) applies, in name order and in one transaction, the modules the `schema_migration` table does not record yet, and records them there; a database that already holds data is backed up first (see *Backups*). Its tables:
 
 - `POKEMON_ENTRY` — the catalog, one row per entry, rebuilt by each refresh. Rows are updated in place, so an entry keeps its identifier from one refresh to the next.
+- `POKEMON_EVOLUTION` — the evolutions between entries, one row per (source, target) pair, rebuilt by each refresh.
 - `SHUNDO` — the collection's shundos, one row per owned entry, referring to `POKEMON_ENTRY`.
 - `CATALOG_REFRESH` — one row per refresh, with the game master timestamp it used and its outcome.
 - `BACKUP_EVENT` — one row per backup taken.

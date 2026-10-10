@@ -15,6 +15,15 @@ More features will follow, each as its own tab of the same application.
 - The Pokémon still lacking a shundo can be listed on their own.
 - Entering the existing state of a large collection has to be fast: a Pokémon is marked as owned, or unmarked, by a single click on its icon, in a grid dense enough to show many Pokémon at once. A dropdown list or a form per Pokémon does not meet this.
 
+### Shundo hunt list
+
+The Pokémon to look for, to fill the collection's missing shundos, are downloaded from the Shundos tab as a CSV file, `pokemons_to_shundo_hunt.csv`, with two columns: `dex number` and `name`.
+
+- A Pokémon is listed when a shundo of it, once caught, fills a missing shundo: the missing Pokémon itself, or any Pokémon evolving into it, directly or through other stages. A missing Gyarados lists Gyarados and Magikarp, since a shundo Magikarp evolves into a shundo Gyarados. A Pokémon already owned is still listed when it evolves into a missing one, since a second shundo of it is the way to the missing one.
+- Only Pokémon whose shiny is released are listed, since no other can be caught as a shundo.
+- Legendary, mythical and ultra beast Pokémon are left out, since they are not usually found in the wild; the game master's class of each Pokémon decides which these are. Baby Pokémon, such as Pichu, are left out for the same reason, since they hatch from eggs; the National Pokédex seed says which these are.
+- The list follows the order of the Shundos tab.
+
 ### What counts as a distinct Pokémon
 
 - Regional forms (Alolan, Galarian, Hisuian, Paldean) are distinct Pokémon: they have their own stats and types, and some start evolutionary lines of their own (Galarian Farfetch'd evolves into Sirfetch'd).

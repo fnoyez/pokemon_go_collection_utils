@@ -7,6 +7,7 @@ from pokemon_go_collection import regions as regions_m
 from pokemon_go_collection.components.pokemon_grid import (
     pokemon_grid as pokemon_grid_m,
 )
+from pokemon_go_collection.services import hunt_list as hunt_list_m
 from pokemon_go_collection.services import shundos as shundos_m
 
 _GRID_KEY = "shundo_grid"
@@ -44,6 +45,7 @@ def _render_shundo_board(db_file_path):
         return
 
     _render_totals(board_entries)
+    _render_hunt_list_download(db_file_path, board_entries)
     filter_column, search_column = st.columns([1, 2])
     with filter_column:
         board_filter = BoardFilter(
@@ -79,6 +81,23 @@ def _render_totals(board_entries):
     columns[1].metric("Shundos missing", markable_nb - owned_nb)
     columns[2].metric(
         "Completion", f"{owned_nb / markable_nb:.1%}" if markable_nb else "-"
+    )
+
+
+def _render_hunt_list_download(db_file_path, board_entries):
+    hunt_entries = hunt_list_m.select_hunt_entries(
+        board_entries, hunt_list_m.load_evolution_edges(db_file_path)
+    )
+    st.download_button(
+        f"Download the hunt list ({len(hunt_entries)} Pokémon)",
+        hunt_list_m.build_hunt_list_csv(hunt_entries),
+        file_name="pokemons_to_shundo_hunt.csv",
+        mime="text/csv",
+        on_click="ignore",
+        help=(
+            "The Pokémon whose shundo, caught and evolved if needed, fills a missing "
+            "shundo; legendary, mythical, ultra beast and baby Pokémon left out."
+        ),
     )
 
 

@@ -168,6 +168,11 @@ def write_catalog(conn, entries, icon_file_names):
         """
     )
     current_entry_ids = {row[0] for row in current_rows}
+    conn.execute(
+        """
+        DELETE FROM pokemon_evolution
+        """
+    )
     conn.executemany(
         """
         DELETE FROM pokemon_entry
@@ -179,9 +184,9 @@ def write_catalog(conn, entries, icon_file_names):
         """
         INSERT INTO pokemon_entry (
           entry_id, dex_number, name, form_ids, region, is_variant, display_order,
-          is_released, shiny_release_date, icon_file_name
+          pokemon_class, is_baby, is_released, shiny_release_date, icon_file_name
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (entry_id) DO UPDATE SET
           dex_number = excluded.dex_number,
           name = excluded.name,
@@ -189,6 +194,8 @@ def write_catalog(conn, entries, icon_file_names):
           region = excluded.region,
           is_variant = excluded.is_variant,
           display_order = excluded.display_order,
+          pokemon_class = excluded.pokemon_class,
+          is_baby = excluded.is_baby,
           is_released = excluded.is_released,
           shiny_release_date = excluded.shiny_release_date,
           icon_file_name = excluded.icon_file_name
@@ -202,6 +209,8 @@ def write_catalog(conn, entries, icon_file_names):
                 entry.region.value,
                 int(entry.is_variant),
                 entry.display_order,
+                entry.pokemon_class.value if entry.pokemon_class else None,
+                int(entry.is_baby),
                 int(entry.is_released),
                 (
                     entry.shiny_release_date.isoformat()
@@ -211,6 +220,17 @@ def write_catalog(conn, entries, icon_file_names):
                 icon_file_names[entry.entry_id],
             )
             for entry in entries
+        ],
+    )
+    conn.executemany(
+        """
+        INSERT INTO pokemon_evolution (source_entry_id, target_entry_id)
+        VALUES (?, ?)
+        """,
+        [
+            (entry.entry_id, target_entry_id)
+            for entry in entries
+            for target_entry_id in entry.evolution_target_entry_ids
         ],
     )
 

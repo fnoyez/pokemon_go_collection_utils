@@ -52,6 +52,9 @@ def make_entry(entry_id, display_order, shiny_release_date=None):
         region=regions_m.Region.KANTO,
         is_variant=False,
         display_order=display_order,
+        pokemon_class=None,
+        is_baby=False,
+        evolution_target_entry_ids=(),
         is_released=True,
         shiny_release_date=shiny_release_date,
     )

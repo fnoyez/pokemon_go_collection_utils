@@ -6,8 +6,8 @@ The catalog is the reference list every feature works on: one entry per distinct
 
 | Source | Provides | Fetched |
 |---|---|---|
-| Game master, `../game_masters/latest/latest.json` (PokeMiners) | The forms each species has in Pokémon GO, with their stats, types and evolutions; the costume flag of each form. Form identifiers (`FARFETCHD_GALARIAN`) are the catalog's entry identifiers. | `git pull` of the sibling repository |
-| National Pokédex seed, `data/national_dex.csv` (from PokeAPI) | Every main series species, with its National Pokédex number, English name, and the species it evolves from. | Once, by `scripts/seed_national_dex.py`; re-run when a main series game introduces new species |
+| Game master, `../game_masters/latest/latest.json` (PokeMiners) | The forms each species has in Pokémon GO, with their stats, types and evolutions; the costume flag of each form; the class of the legendary, mythical and ultra beast Pokémon. Form identifiers (`FARFETCHD_GALARIAN`) are the catalog's entry identifiers. | `git pull` of the sibling repository |
+| National Pokédex seed, `data/national_dex.csv` (from PokeAPI) | Every main series species, with its National Pokédex number, English name, the species it evolves from, and whether it is a baby Pokémon. | Once, by `scripts/seed_national_dex.py`; re-run when a main series game introduces new species |
 | PvPoke game master (`pvpoke/pvpoke`, `src/data/gamemaster.json`) | Whether a species or form is released in Pokémon GO. | Each refresh |
 | LeekDuck shiny checklist data (`leekduck.com/shiny/pms.json`) | The date each shiny species or form is, or will be, released in Pokémon GO. | Each refresh |
 | Icons, PokeMiners `pogo_assets` | The Pokémon GO icon of each form, normal and shiny. PokeAPI's sprite stands in for a Pokémon with no Pokémon GO icon. | Each refresh, for the icons not cached yet |
@@ -31,7 +31,7 @@ An entry is a species, or one of its forms that is a distinct Pokémon. Every sp
   - `distinct` makes an entry of a form the rules would merge into the base entry, and may assign it to the variant block of a region (see below): white-striped Basculin, which evolves into the Hisuian Basculegion.
 - **A species absent from the game master** has its base entry only, unreleased.
 
-Each entry also holds the forms merged into it, which is what matching it against LeekDuck and the icons relies on.
+Each entry also holds the forms merged into it, which is what matching it against LeekDuck and the icons relies on, the class of its first form (legendary, mythical, ultra beast, or none), whether its species is a baby Pokémon, and the entries it evolves into, read as described under *Variant lines* below.
 
 ## Grouping and ordering
 

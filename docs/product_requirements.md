@@ -24,6 +24,16 @@ The Pokémon to look for, to fill the collection's missing shundos, are download
 - Legendary, mythical and ultra beast Pokémon are left out, since they are not usually found in the wild; the game master's class of each Pokémon decides which these are. Baby Pokémon, such as Pichu, are left out for the same reason, since they hatch from eggs; the National Pokédex seed says which these are.
 - The list follows the order of the Shundos tab.
 
+### Spawn watch
+
+- While turned on, the application checks at a set interval for live spawns that will be shundos for the user's account and are on the shundo hunt list, using the pogocoordinates.com service, and sends a Discord message for each such spawn.
+- The service is a third party whose terms allow automated use only within what a single human user would generate: a check is one search, checks are at least 5 minutes apart, and the coordinates of a spawn are only requested when the user opens the link in its alert. Spawns despawning sooner than the interval may be missed.
+- A spawn is alerted once.
+- The watch is turned on and off, and its interval set, from the application, without restarting it. The login to the service is renewed from the application as well.
+- The record of checks and alerts is kept for a bounded time.
+
+The design is in [spawn_watch.md](spawn_watch.md).
+
 ### What counts as a distinct Pokémon
 
 - Regional forms (Alolan, Galarian, Hisuian, Paldean) are distinct Pokémon: they have their own stats and types, and some start evolutionary lines of their own (Galarian Farfetch'd evolves into Sirfetch'd).

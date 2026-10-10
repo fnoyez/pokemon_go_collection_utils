@@ -17,10 +17,11 @@
 - `src/pokemon_go_collection/db.py` — connection helpers.
 - `src/pokemon_go_collection/migrate.py` and `migrations/` — the migration runner and the schema.
 - `src/pokemon_go_collection/regions.py` — the regions and the National Pokédex numbers each introduced.
-- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `overrides.py`, `icons.py`; and `http.py`, the download helper they share.
+- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `overrides.py`, `icons.py`, `pogocoordinates.py`, `discord.py`; and `http.py`, the download helper they share.
 - `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
-- `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog tables), `shundos.py` (reading and recording the collection), `hunt_list.py` (the shundo hunt list), `backups.py`.
+- `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog tables), `shundos.py` (reading and recording the collection), `hunt_list.py` (the shundo hunt list), `spawn_watch.py` (the spawn watch) and `pogocoordinates_login.py` (its login), `backups.py`.
 - `src/pokemon_go_collection/ui_shundos.py` — the Shundos tab.
+- `src/pokemon_go_collection/ui_spawn_watch.py` — the Spawn watch tab; the watch itself is `services/spawn_watch.py`, described in [spawn_watch.md](spawn_watch.md).
 - `src/pokemon_go_collection/components/pokemon_grid/` — the clickable icon grid, a Streamlit component (below).
 - `src/pokemon_go_collection/cli.py` — the CLI entry points.
 - `scripts/seed_national_dex.py` — writes `data/national_dex.csv` from PokeAPI.
@@ -34,6 +35,7 @@
 - Backup folder: `/home/pavel/Data/Projects/data/.pokemon_go_collection_db_backup`.
 - Icon cache: `static/icons/` in the repository, ignored by git. Streamlit serves files only from a `static` folder next to the script it runs, so the cache lives there rather than in the application home; it holds nothing that a refresh cannot download again.
 - Game master repository: `../game_masters`, next to this repository.
+- Spawn watch login profile and secrets: see [spawn_watch.md](spawn_watch.md), *Storage*.
 
 Paths are validated at startup, and the application stops with an error when one is invalid. The backup folder has to exist beforehand.
 
@@ -46,6 +48,7 @@ The schema is the ordered sequence of modules under `src/pokemon_go_collection/m
 - `SHUNDO` — the collection's shundos, one row per owned entry, referring to `POKEMON_ENTRY`.
 - `CATALOG_REFRESH` — one row per refresh, with the game master timestamp it used and its outcome.
 - `BACKUP_EVENT` — one row per backup taken.
+- `SPAWN_WATCH_CONFIG`, `SPAWN_CHECK`, `SPAWN_ALERT` — the spawn watch's settings and records, described in [spawn_watch.md](spawn_watch.md), *Storage*.
 
 A refresh whose new catalog no longer holds an entry the collection owns fails, naming the entry, rather than deleting what the collection records. A form disappearing from the sources is a change to look into, and `data/form_overrides.csv` is where it is resolved.
 

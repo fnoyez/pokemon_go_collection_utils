@@ -2,7 +2,7 @@
 
 ## Overview
 
-- Local-first, single-user application, built like the sibling `activity_management` application.
+- Local-first, single-user application: it runs on the user's machine, serves one person, and needs no account or remote server.
 - Storage: one SQLite database file, accessed with direct SQL (no ORM).
 - Interface: a Streamlit application, one tab per feature. The Shundos tab is the first.
 - Services: plain Python modules for building the catalog, refreshing its sources, recording the collection and taking backups, free of any Streamlit code.
@@ -39,7 +39,7 @@ Paths are validated at startup, and the application stops with an error when one
 
 ## Data model
 
-The schema is the ordered sequence of modules under `src/pokemon_go_collection/migrations/`, each exposing `upgrade(conn)`; the runner works as `activity_management`'s does (its `docs/architecture.md`, *Schema migrations*). Its tables:
+The schema is the ordered sequence of modules under `src/pokemon_go_collection/migrations/`, each exposing `upgrade(conn)`. At every start, the runner (`migrate.py`) applies, in name order and in one transaction, the modules the `schema_migration` table does not record yet, and records them there; a database that already holds data is backed up first (see *Backups*). Its tables:
 
 - `POKEMON_ENTRY` — the catalog, one row per entry, rebuilt by each refresh. Rows are updated in place, so an entry keeps its identifier from one refresh to the next.
 - `SHUNDO` — the collection's shundos, one row per owned entry, referring to `POKEMON_ENTRY`.
@@ -50,7 +50,7 @@ A refresh whose new catalog no longer holds an entry the collection owns fails, 
 
 ## Backups
 
-As in `activity_management` (its `docs/backup_strategy.md`): the SQLite backup API copies the database while the application runs, one automatic backup is taken per day when the application starts, retention keeps the last 30 daily, 12 monthly and 5 yearly automatic backups, and a backup taken before applying migrations is never pruned. Manual backups are taken from the sidebar or the CLI.
+The SQLite backup API copies the database while the application runs, one automatic backup is taken per day when the application starts, retention keeps the last 30 daily, 12 monthly and 5 yearly automatic backups, and a backup taken before applying migrations is never pruned. Manual backups are taken from the sidebar or the CLI.
 
 ## Data refresh
 

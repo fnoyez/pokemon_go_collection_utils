@@ -41,5 +41,8 @@ The sources and how they are combined are in [catalog.md](catalog.md), *Data sou
 ### Technical constraints
 
 - Python is the main language, at least for the backend.
-- Streamlit serves the interface, as in the `activity_management` application, with the same tab-based layout.
-- The collection is stored in a SQLite database, whose location and backups are managed as in `activity_management`.
+- Streamlit serves the interface, as a single page with one tab per feature.
+- The collection is stored in a SQLite database kept outside the repository, in a folder of the user's home, so that working on the code never touches the data.
+- The database is backed up automatically, to a separate folder, with a retention policy bounding the number of backups kept; a backup can also be taken on demand, and the database is backed up before any change to its schema.
+
+Where the database and its backups live, and the retention policy, are in [architecture.md](architecture.md), *Storage and configuration* and *Backups*.

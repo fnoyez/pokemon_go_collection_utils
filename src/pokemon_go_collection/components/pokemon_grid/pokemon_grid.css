@@ -1,0 +1,97 @@
+.pokemon-grid-root {
+  font-family: var(--st-font, sans-serif);
+  color: var(--st-text-color, inherit);
+}
+
+.region-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.region-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.region-summary,
+.section-title {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.section-title {
+  margin: 0.75rem 0 0.35rem;
+  font-style: italic;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 4px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  user-select: none;
+}
+
+.tile img,
+.tile .no-icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.tile .dex-number {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.tile.markable {
+  cursor: pointer;
+}
+
+.tile.markable:hover {
+  border-color: var(--st-primary-color, #ff4b4b);
+}
+
+.tile.state-missing img {
+  filter: saturate(60%);
+  opacity: 0.55;
+}
+
+.tile.state-owned {
+  background: rgba(46, 160, 67, 0.15);
+}
+
+.tile.state-owned::after {
+  content: "✓";
+  position: absolute;
+  top: 1px;
+  right: 4px;
+  font-weight: 700;
+  color: rgb(46, 160, 67);
+}
+
+.tile.state-no_shiny img {
+  filter: grayscale(100%);
+  opacity: 0.15;
+}
+
+.tile.state-unreleased img {
+  filter: brightness(0);
+  opacity: 0.15;
+}
+
+.tile.state-no_shiny,
+.tile.state-unreleased {
+  cursor: not-allowed;
+}

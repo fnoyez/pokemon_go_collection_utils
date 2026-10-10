@@ -1,0 +1,24 @@
+form_id,decision,target_form_id,variant_region,reason
+AEGISLASH_BLADE,merge,,,Battle-only transformation of Aegislash
+DARMANITAN_ZEN,merge,,,Battle-only transformation of Darmanitan
+DARMANITAN_GALARIAN_ZEN,merge,DARMANITAN_GALARIAN_STANDARD,,Battle-only transformation of Galarian Darmanitan
+MELOETTA_PIROUETTE,merge,,,Battle-only transformation of Meloetta
+WISHIWASHI_SCHOOL,merge,,,Battle-only transformation of Wishiwashi
+MINIOR_BLUE,merge,,,Battle-only core of Minior
+MINIOR_GREEN,merge,,,Battle-only core of Minior
+MINIOR_INDIGO,merge,,,Battle-only core of Minior
+MINIOR_ORANGE,merge,,,Battle-only core of Minior
+MINIOR_RED,merge,,,Battle-only core of Minior
+MINIOR_VIOLET,merge,,,Battle-only core of Minior
+MINIOR_YELLOW,merge,,,Battle-only core of Minior
+NECROZMA_ULTRA,merge,,,Battle-only transformation of Necrozma
+EISCUE_NOICE,merge,,,Battle-only transformation of Eiscue
+ETERNATUS_ETERNAMAX,merge,,,Battle-only form of Eternatus
+PALAFIN_HERO,merge,,,Battle-only transformation of Palafin
+URSHIFU_SINGLE_STRIKE,merge,,,The species' usual form; the formless settings do not describe it
+ZACIAN_HERO,merge,,,The species' usual form; the game master omits its second type
+ZAMAZENTA_HERO,merge,,,The species' usual form; the game master omits its second type
+ZYGARDE_FIFTY_PERCENT,merge,,,The species' usual form; it evolves into the Complete Forme where the formless settings evolve into it
+ZYGARDE_COMPLETE_FIFTY_PERCENT,merge,,,The Complete Forme reverted to its 50% Forme
+ZYGARDE_COMPLETE_TEN_PERCENT,merge,ZYGARDE_TEN_PERCENT,,The Complete Forme reverted to its 10% Forme
+BASCULIN_WHITE_STRIPED,distinct,,Hisui,Starts the line of Basculegion; both were introduced in Hisui

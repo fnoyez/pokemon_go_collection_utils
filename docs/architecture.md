@@ -11,12 +11,13 @@
 ## Module layout
 
 - `run_app.py` — the file `streamlit run` starts; sets up logging and calls `app.main`.
+- `src/pokemon_go_collection/logging_setup.py` — the logging setup every entry point calls.
 - `src/pokemon_go_collection/app.py` — the Streamlit page: configuration, database initialization, automatic backup and refresh, tabs.
 - `src/pokemon_go_collection/config.py` — configuration: paths and refresh period.
 - `src/pokemon_go_collection/db.py` — connection helpers.
 - `src/pokemon_go_collection/migrate.py` and `migrations/` — the migration runner and the schema.
 - `src/pokemon_go_collection/regions.py` — the regions and the National Pokédex numbers each introduced.
-- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `icons.py`.
+- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `overrides.py`, `icons.py`; and `http.py`, the download helper they share.
 - `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
 - `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog table), `shundos.py` (reading and recording the collection), `backups.py`.
 - `src/pokemon_go_collection/ui_shundos.py` — the Shundos tab.
@@ -57,21 +58,21 @@ A refresh brings the catalog up to date with its sources:
 
 1. Pull the game master repository (`git pull --ff-only`).
 2. Download the PvPoke game master and the LeekDuck shiny data, replacing their snapshots.
-3. Rebuild the catalog from the sources and write it to `POKEMON_ENTRY`, in one transaction.
+3. Rebuild the catalog from the sources.
 4. Download the icons missing from the cache.
-5. Record the refresh in `CATALOG_REFRESH`.
+5. Write the catalog, with each entry's icon, to `POKEMON_ENTRY`, in one transaction.
+6. Record the refresh in `CATALOG_REFRESH`.
 
 A source that cannot be reached (no network, a site down) leaves its last snapshot in use, and the refresh records a warning; a refresh with no snapshot at all to fall back on fails.
 
-The application runs a refresh when it starts and the last successful one is older than the refresh period (7 days by default). A refresh is also started from the sidebar, or with the CLI.
+The application runs a refresh when it starts and the last successful one is older than the refresh period (7 days by default); after a failed attempt, it waits an hour before trying again. A refresh is also started from the sidebar, or with the CLI (`pgcollection-refresh`).
 
 ## The icon grid
 
 Marking a shundo is a click on the Pokémon's icon. Streamlit's own widgets cannot do this at the scale of the catalog: an image is not clickable, and over a thousand checkboxes would redraw the whole page at every click. The grid is therefore a Streamlit component (`st.components.v2`): HTML, CSS and JavaScript held in the repository, with no frontend build step.
 
 - Python passes the component the entries to show, grouped and ordered, with their state and icon URL.
-- A click on a markable icon toggles it in the browser immediately, and sends the entry's identifier to Python, which records the change in `SHUNDO`.
+- A click on a markable icon toggles it in the browser immediately. The component then sends Python the ownership asked for every entry clicked since the page was loaded, and Python makes `SHUNDO` match it. Sending the whole mapping rather than the last click is what keeps rapid clicks safe: Streamlit may coalesce several events into one rerun, and the mapping still holds each of them.
 - The tab redraws inside a Streamlit fragment, so a click does not rerun the rest of the page.
 
 The tab around the grid holds a filter (all, missing, owned), a search on names, and the count of owned and markable entries per region.
-

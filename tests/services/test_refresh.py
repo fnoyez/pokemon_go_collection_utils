@@ -1,0 +1,73 @@
+import datetime
+
+import pytest
+
+from pokemon_go_collection import catalog as catalog_m
+from pokemon_go_collection import db as db_m
+from pokemon_go_collection import migrate as migrate_m
+from pokemon_go_collection import regions as regions_m
+from pokemon_go_collection.services import refresh as refresh_m
+from pokemon_go_collection.services import shundos as shundos_m
+
+TODAY = datetime.date(2026, 10, 10)
+
+
+def test_write_catalog_keeps_owned_entries(tmp_path):
+    db_file_path = tmp_path / "collection.sqlite"
+    migrate_m.init_db(db_file_path)
+    shiny_release_date = datetime.date(2020, 1, 1)
+    with db_m.db_conn(db_file_path) as conn:
+        refresh_m.write_catalog(
+            conn,
+            [
+                make_entry("BULBASAUR", 0, shiny_release_date=shiny_release_date),
+                make_entry("IVYSAUR", 1),
+            ],
+            {"BULBASAUR": "BULBASAUR.shiny.png", "IVYSAUR": None},
+        )
+    shundos_m.apply_desired_ownership(
+        db_file_path, {"BULBASAUR": True, "IVYSAUR": True}, TODAY
+    )
+
+    with db_m.db_conn(db_file_path) as conn:
+        refresh_m.write_catalog(
+            conn,
+            [make_entry("BULBASAUR", 0, shiny_release_date=shiny_release_date)],
+            {"BULBASAUR": "BULBASAUR.shiny.png"},
+        )
+    board_entries = shundos_m.load_board_entries(db_file_path, TODAY)
+
+    assert [(entry.entry_id, entry.state) for entry in board_entries] == [
+        ("BULBASAUR", shundos_m.EntryState.OWNED)
+    ]
+
+
+def make_entry(entry_id, display_order, shiny_release_date=None):
+    return catalog_m.CatalogEntry(
+        entry_id=entry_id,
+        dex_number=display_order + 1,
+        name=entry_id.capitalize(),
+        form_ids=(entry_id,),
+        form_suffixes=(None,),
+        region=regions_m.Region.KANTO,
+        is_variant=False,
+        display_order=display_order,
+        is_released=True,
+        shiny_release_date=shiny_release_date,
+    )
+
+
+def test_write_catalog_refuses_to_drop_owned_entry(tmp_path):
+    db_file_path = tmp_path / "collection.sqlite"
+    migrate_m.init_db(db_file_path)
+    with db_m.db_conn(db_file_path) as conn:
+        refresh_m.write_catalog(
+            conn,
+            [make_entry("BULBASAUR", 0, shiny_release_date=datetime.date(2020, 1, 1))],
+            {"BULBASAUR": None},
+        )
+    shundos_m.apply_desired_ownership(db_file_path, {"BULBASAUR": True}, TODAY)
+
+    with pytest.raises(refresh_m.CatalogRefreshError):
+        with db_m.db_conn(db_file_path) as conn:
+            refresh_m.write_catalog(conn, [make_entry("IVYSAUR", 0)], {"IVYSAUR": None})

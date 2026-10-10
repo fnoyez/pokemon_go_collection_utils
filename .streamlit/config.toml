@@ -1,0 +1,3 @@
+[server]
+# Serves the icon cache under static/ at app/static/.
+enableStaticServing = true

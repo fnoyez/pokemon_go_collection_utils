@@ -1,0 +1,39 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        additional_dependencies: ["flake8-colors"]  # Add "flake8-print" to be able to be warned about print statements
+        args:
+          - "--ignore=E501,W503,E203,E266,E301"
+        # E501: Because max line size is controlled by the use of 'black'; and because
+        # W503: Because wether or not to introduce line break before binary operator is controlled by the use of 'black'
+        # E203: Because the use of 'black' can imply to put a whitespece before a ':'
+        # E266: Because we may use several consecutive leading # characters to write comments from time to time
+        # E301: Because it's may be normal / acceptable for us to not have a blank line after such a comment
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.9.1
+    hooks:
+      - id: nbqa-black
+        additional_dependencies: ["black==25.1.0"]
+        args: ["--nbqa-skip=%%file"]
+      - id: nbqa-flake8
+        additional_dependencies: ["flake8==7.3.0", "flake8-colors"]
+        args: ["--nbqa-skip=%%file", "--extend-ignore=E266,E501"]
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.8.1
+    hooks:
+      - id: nbstripout

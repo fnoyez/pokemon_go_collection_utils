@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pokemon-go-collection"
+version = "0.1.0"
+description = "Local Pokémon GO collection tracker with Streamlit and SQLite"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit>=1.57.0,<2",
+]
+
+[project.scripts]
+pgcollection-init = "pokemon_go_collection.cli:main_init"
+pgcollection-backup = "pokemon_go_collection.cli:main_backup"
+pgcollection-refresh = "pokemon_go_collection.cli:main_refresh"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pokemon_go_collection*"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.30.1,<7",
+    "pre-commit>=4.3.0,<5",
+    "pytest>=9.0.2,<10",
+]

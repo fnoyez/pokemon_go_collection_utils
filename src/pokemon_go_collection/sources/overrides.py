@@ -11,6 +11,8 @@ class FormDecision(enum.Enum):
     MERGE = "merge"
     # The form is a Pokémon of its own.
     DISTINCT = "distinct"
+    # The form is its species' base form, standing for the species' base entry.
+    BASE = "base"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -24,6 +26,11 @@ class FormOverride:
 
 
 def load_form_overrides(file_path):
+    """Return the overrides by form identifier, in the file's order.
+
+    That order is the display order of the entries of a species whose base form
+    an override chooses.
+    """
     with open(file_path, encoding="utf-8", newline="") as file:
         return {
             row["form_id"]: FormOverride(

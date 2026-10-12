@@ -6,6 +6,7 @@ import enum
 import json
 import logging
 import random
+import re
 import urllib.error
 
 from pokemon_go_collection import db as db_m
@@ -67,6 +68,8 @@ class SpawnMatch:
     target: HuntTarget
     # False when the spawn's form matched no form of the service's catalog.
     is_form_recognized: bool
+    # `lat,lng`, once revealed.
+    coordinates: str | None = None
 
 
 def run_spawn_watch_loop(cfg, stop_event, wake_duration=datetime.timedelta(seconds=30)):
@@ -171,11 +174,13 @@ def run_spawn_check(cfg, now, retention_duration=datetime.timedelta(days=7)):
 
     matches = match_spawns(spawns, hunt_targets, service_forms, now)
     alerted_encounter_ids = load_alerted_encounter_ids(cfg.db_file_path)
-    new_matches = [
-        match
-        for match in matches
-        if match.spawn.encounter_id not in alerted_encounter_ids
-    ]
+    new_matches = reveal_coordinates(
+        [
+            match
+            for match in matches
+            if match.spawn.encounter_id not in alerted_encounter_ids
+        ]
+    )
     try:
         for message in build_alert_messages(new_matches, now):
             discord_m.post_webhook_message(webhook_url, message)
@@ -381,19 +386,26 @@ def find_spawn_form_name(spawn_form, species_service_forms):
         if len(species_service_forms) == 1:
             return species_service_forms[0].form_name
         return None
+    # The service writes a form as a word (`Alola`, `Pom-Pom`), where its
+    # catalog holds an identifier (`ALOLA`, `POMPOM`).
+    normalized_spawn_form = _normalize_form_name(spawn_form)
     return next(
         (
             service_form.form_name
             for service_form in species_service_forms
-            if spawn_form
+            if normalized_spawn_form
             in (
-                service_form.form_name,
-                service_form.form_suffix,
+                _normalize_form_name(service_form.form_name),
+                _normalize_form_name(service_form.form_suffix),
                 str(service_form.form_id),
             )
         ),
         None,
     )
+
+
+def _normalize_form_name(form_name):
+    return None if form_name is None else re.sub(r"[^A-Z0-9]", "", form_name.upper())
 
 
 def load_alerted_encounter_ids(db_file_path):
@@ -405,6 +417,30 @@ def load_alerted_encounter_ids(db_file_path):
             """
         ).fetchall()
     return {row[0] for row in rows}
+
+
+def reveal_coordinates(matches):
+    """Return the matches with their coordinates, for those the service reveals.
+
+    A match the service does not reveal keeps its reveal link alone, and a
+    refusal for the rate leaves the following ones unrevealed too.
+    """
+    revealed_matches = []
+    for match_index, match in enumerate(matches):
+        try:
+            coordinates = pogocoordinates_m.reveal_coordinates(match.spawn.reveal_code)
+        except pogocoordinates_m.PogocoordinatesRateLimitError as error:
+            logger.warning(f"Coordinates not revealed: {error}")
+            revealed_matches.extend(matches[match_index:])
+            break
+        except (urllib.error.URLError, TimeoutError) as error:
+            logger.warning(
+                f"Coordinates of {match.spawn.encounter_id} not revealed: {error}"
+            )
+            revealed_matches.append(match)
+        else:
+            revealed_matches.append(dataclasses.replace(match, coordinates=coordinates))
+    return revealed_matches
 
 
 def build_alert_messages(matches, now):
@@ -429,15 +465,18 @@ def _build_alert_line(match, now):
     else:
         name = f"{spawn.pokemon_name} (form {spawn.form}, not recognized)"
     remaining_minutes_nb = int((spawn.despawn_time - now).total_seconds() // 60)
-    reveal_url = pogocoordinates_m.build_reveal_url(spawn.reveal_code)
     parts = [
         f"**{name}** {spawn.raw_iv}",
         f"CP {spawn.cp}",
         f"L{spawn.level:g}",
         spawn.location,
         f"{remaining_minutes_nb} min left",
-        f"[coordinates](<{reveal_url}>)",
     ]
+    if match.coordinates is None:
+        reveal_url = pogocoordinates_m.build_reveal_url(spawn.reveal_code)
+        parts.append(f"[coordinates](<{reveal_url}>)")
+    else:
+        parts.append(match.coordinates)
     return " · ".join(parts)
 
 
@@ -447,9 +486,9 @@ def record_alerts(db_file_path, matches, alert_time):
             """
             INSERT INTO spawn_alert (
               encounter_id, entry_id, name, raw_iv, cp, level, location,
-              despawn_time, reveal_url, alert_time
+              despawn_time, reveal_url, coordinates, alert_time
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -462,6 +501,7 @@ def record_alerts(db_file_path, matches, alert_time):
                     match.spawn.location,
                     match.spawn.despawn_time.isoformat(),
                     pogocoordinates_m.build_reveal_url(match.spawn.reveal_code),
+                    match.coordinates,
                     alert_time.isoformat(),
                 )
                 for match in matches
@@ -534,7 +574,9 @@ def load_recent_alerts(db_file_path, alerts_nb=50):
     with db_m.db_conn(db_file_path) as conn:
         rows = conn.execute(
             """
-            SELECT alert_time, name, raw_iv, cp, level, location, despawn_time, reveal_url
+            SELECT
+              alert_time, name, raw_iv, cp, level, location, despawn_time,
+              coordinates, reveal_url
             FROM spawn_alert
             ORDER BY alert_time DESC
             LIMIT ?
@@ -550,7 +592,18 @@ def load_recent_alerts(db_file_path, alerts_nb=50):
             "level": level,
             "location": location,
             "despawn_time": despawn_time,
-            "coordinates": reveal_url,
+            "coordinates": coordinates,
+            "reveal_url": reveal_url,
         }
-        for alert_time, name, raw_iv, cp, level, location, despawn_time, reveal_url in rows
+        for (
+            alert_time,
+            name,
+            raw_iv,
+            cp,
+            level,
+            location,
+            despawn_time,
+            coordinates,
+            reveal_url,
+        ) in rows
     ]

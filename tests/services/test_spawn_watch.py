@@ -1,5 +1,6 @@
 import datetime
 from contextlib import nullcontext as does_not_raise
+from unittest.mock import patch
 
 import pytest
 
@@ -174,6 +175,12 @@ def get_find_spawn_form_name_test_data():
             "expected_form_name": None,
         },
         {
+            "id": "form-as-the-service-writes-it",
+            "spawn_form": "Alola",
+            "species_service_forms": SERVICE_FORMS[0:2],
+            "expected_form_name": "RATTATA_ALOLA",
+        },
+        {
             "id": "form-by-suffix",
             "spawn_form": "ALOLA",
             "species_service_forms": SERVICE_FORMS[0:2],
@@ -246,7 +253,7 @@ def get_match_spawns_test_data():
     test_cases = [
         {
             "id": "form-on-hunt-list",
-            "spawns": [make_spawn("1", 19, form="ALOLA")],
+            "spawns": [make_spawn("1", 19, form="Alola")],
             "expected_matches": [("1", "RATTATA_ALOLA", True)],
         },
         {
@@ -348,7 +355,9 @@ def test_find_first_check_time(last_check_time, config, expected_time):
 
 def test_build_alert_messages_keeps_each_message_within_discord_limit():
     matches = [
-        spawn_watch_m.SpawnMatch(make_spawn(str(index), 570), ZORUA, True)
+        spawn_watch_m.SpawnMatch(
+            make_spawn(str(index), 570), ZORUA, is_form_recognized=True
+        )
         for index in range(30)
     ]
 
@@ -357,6 +366,101 @@ def test_build_alert_messages_keeps_each_message_within_discord_limit():
     assert len(messages) > 1
     assert all(len(message) <= 2000 for message in messages)
     assert sum(message.count("**Zorua**") for message in messages) == 30
+
+
+def get_build_alert_messages_test_data():
+    spawn = make_spawn("1", 570)
+    test_cases = [
+        {
+            "id": "coordinates-revealed",
+            "matches": [
+                spawn_watch_m.SpawnMatch(
+                    spawn,
+                    ZORUA,
+                    is_form_recognized=True,
+                    coordinates="34.6512122,135.5342254",
+                )
+            ],
+            "expected_messages": [
+                (
+                    "**Zorua** 15/15/15 · CP 500 · L20 · Orléans, Loiret, France · "
+                    "10 min left · 34.6512122,135.5342254"
+                )
+            ],
+        },
+        {
+            "id": "coordinates-not-revealed",
+            "matches": [
+                spawn_watch_m.SpawnMatch(spawn, ZORUA, is_form_recognized=True)
+            ],
+            "expected_messages": [
+                (
+                    "**Zorua** 15/15/15 · CP 500 · L20 · Orléans, Loiret, France · "
+                    "10 min left · [coordinates]"
+                    "(<https://coordinates-api.pokemongopro.com/reveal/code-1>)"
+                )
+            ],
+        },
+        {
+            "id": "form-not-recognized",
+            "matches": [
+                spawn_watch_m.SpawnMatch(
+                    make_spawn("1", 570, form="Spooky"),
+                    ZORUA,
+                    is_form_recognized=False,
+                    coordinates="34.6512122,135.5342254",
+                )
+            ],
+            "expected_messages": [
+                (
+                    "**Pokemon 570 (form Spooky, not recognized)** 15/15/15 · "
+                    "CP 500 · L20 · Orléans, Loiret, France · 10 min left · "
+                    "34.6512122,135.5342254"
+                )
+            ],
+        },
+    ]
+
+    return [
+        pytest.param(
+            test_case["matches"],
+            test_case["expected_messages"],
+            id=test_case["id"],
+        )
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize(
+    "matches,expected_messages", get_build_alert_messages_test_data()
+)
+def test_build_alert_messages(matches, expected_messages):
+    assert spawn_watch_m.build_alert_messages(matches, NOW) == expected_messages
+
+
+def test_reveal_coordinates_stops_revealing_when_rate_limited():
+    matches = [
+        spawn_watch_m.SpawnMatch(
+            make_spawn(encounter_id, 570), ZORUA, is_form_recognized=True
+        )
+        for encounter_id in ("1", "2", "3")
+    ]
+    reveal_outcomes = [
+        "34.6512122,135.5342254",
+        pogocoordinates_m.PogocoordinatesRateLimitError(datetime.timedelta(hours=1)),
+    ]
+
+    with patch.object(
+        pogocoordinates_m, "reveal_coordinates", side_effect=reveal_outcomes
+    ) as reveal_mock:
+        revealed_matches = spawn_watch_m.reveal_coordinates(matches)
+
+    assert [match.coordinates for match in revealed_matches] == [
+        "34.6512122,135.5342254",
+        None,
+        None,
+    ]
+    assert reveal_mock.call_count == 2
 
 
 def get_save_watch_config_test_data():
@@ -404,12 +508,20 @@ def test_delete_old_records_keeps_recent_alerts(tmp_path):
     old_time = NOW - datetime.timedelta(days=8)
     spawn_watch_m.record_alerts(
         db_file_path,
-        [spawn_watch_m.SpawnMatch(make_spawn("old", 570), ZORUA, True)],
+        [
+            spawn_watch_m.SpawnMatch(
+                make_spawn("old", 570), ZORUA, is_form_recognized=True
+            )
+        ],
         old_time,
     )
     spawn_watch_m.record_alerts(
         db_file_path,
-        [spawn_watch_m.SpawnMatch(make_spawn("recent", 570), ZORUA, True)],
+        [
+            spawn_watch_m.SpawnMatch(
+                make_spawn("recent", 570), ZORUA, is_form_recognized=True
+            )
+        ],
         NOW,
     )
     spawn_watch_m.record_check(

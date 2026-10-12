@@ -309,6 +309,102 @@ def test_build_catalog_links_evolutions():
     }
 
 
+def test_build_catalog_splits_a_species_whose_base_form_an_override_chooses():
+    national_dex_species = [
+        national_dex_m.Species(
+            dex_number=585,
+            identifier="deerling",
+            name="Deerling",
+            evolves_from_dex_number=None,
+            is_baby=False,
+        ),
+        national_dex_m.Species(
+            dex_number=586,
+            identifier="sawsbuck",
+            name="Sawsbuck",
+            evolves_from_dex_number=585,
+            is_baby=False,
+        ),
+    ]
+    game_master = game_master_m.GameMaster(
+        forms=(
+            make_form("DEERLING", "DEERLING", 585, (115, 100, 155), ("NORMAL",)),
+            *(
+                make_form(
+                    f"DEERLING_{season}",
+                    "DEERLING",
+                    585,
+                    (115, 100, 155),
+                    ("NORMAL",),
+                    evolutions=(("SAWSBUCK", f"SAWSBUCK_{season}"),),
+                )
+                for season in ("SPRING", "SUMMER", "AUTUMN")
+            ),
+            make_form("SAWSBUCK", "SAWSBUCK", 586, (198, 146, 190), ("NORMAL",)),
+            *(
+                make_form(
+                    f"SAWSBUCK_{season}", "SAWSBUCK", 586, (198, 146, 190), ("NORMAL",)
+                )
+                for season in ("SPRING", "SUMMER", "AUTUMN")
+            ),
+        ),
+        costume_form_ids=frozenset(),
+        timestamp=datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc),
+    )
+    # The override lines order the species' entries: Autumn before Summer.
+    form_overrides = {
+        form_id: overrides_m.FormOverride(
+            form_id=form_id,
+            decision=decision,
+            target_form_id=None,
+            variant_region=None,
+        )
+        for species_id in ("DEERLING", "SAWSBUCK")
+        for form_id, decision in (
+            (f"{species_id}_SPRING", overrides_m.FormDecision.BASE),
+            (f"{species_id}_AUTUMN", overrides_m.FormDecision.DISTINCT),
+            (f"{species_id}_SUMMER", overrides_m.FormDecision.DISTINCT),
+        )
+    }
+
+    entries = catalog_m.build_catalog(
+        national_dex_species,
+        game_master,
+        form_overrides,
+        pvpoke_species=[],
+        shiny_releases=[],
+        release_override_entry_ids=frozenset(),
+    )
+
+    actual_entries = [
+        (entry.entry_id, entry.name, entry.form_ids, entry.evolution_target_entry_ids)
+        for entry in entries
+    ]
+    assert actual_entries == [
+        (
+            "DEERLING",
+            "Deerling (Spring)",
+            ("DEERLING_SPRING", "DEERLING"),
+            ("SAWSBUCK",),
+        ),
+        (
+            "DEERLING_AUTUMN",
+            "Deerling (Autumn)",
+            ("DEERLING_AUTUMN",),
+            ("SAWSBUCK_AUTUMN",),
+        ),
+        (
+            "DEERLING_SUMMER",
+            "Deerling (Summer)",
+            ("DEERLING_SUMMER",),
+            ("SAWSBUCK_SUMMER",),
+        ),
+        ("SAWSBUCK", "Sawsbuck (Spring)", ("SAWSBUCK_SPRING", "SAWSBUCK"), ()),
+        ("SAWSBUCK_AUTUMN", "Sawsbuck (Autumn)", ("SAWSBUCK_AUTUMN",), ()),
+        ("SAWSBUCK_SUMMER", "Sawsbuck (Summer)", ("SAWSBUCK_SUMMER",), ()),
+    ]
+
+
 def get_build_catalog_statuses_test_data():
     test_cases = [
         {

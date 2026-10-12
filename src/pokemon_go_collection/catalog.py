@@ -119,7 +119,7 @@ class EntryDraft:
     form_ids: tuple[str, ...]
     form_suffixes: tuple[str | None, ...]
     # -1 for the base entry, else the position of its representative form
-    # among its species' forms.
+    # among its species' entries, see `_SpeciesLayout.form_orders`.
     form_order: int
     # The region of the variant block it starts a line in, for a line root
     # candidate: a regional form, or a form an override assigns to a region.
@@ -194,6 +194,12 @@ class _SpeciesLayout:
     undecided_forms: list
     # The variant region an override assigns to a form, by form identifier.
     override_variant_regions: dict
+    # Whether an override chooses the base form.
+    is_base_form_overridden: bool
+    # The position of each form among its species' entries, by form
+    # identifier: its game master position, or, for a species whose base form
+    # an override chooses, the position of its override line.
+    form_orders: dict
 
 
 def _lay_out_species(species, species_forms, costume_form_ids, form_overrides):
@@ -210,6 +216,8 @@ def _lay_out_species(species, species_forms, costume_form_ids, form_overrides):
             merge_target_form_ids={},
             undecided_forms=[],
             override_variant_regions={},
+            is_base_form_overridden=False,
+            form_orders={},
         )
 
     species_id = forms[0].species_id
@@ -217,7 +225,16 @@ def _lay_out_species(species, species_forms, costume_form_ids, form_overrides):
     normal_form = next(
         (form for form in forms if form.form_id == f"{species_id}_NORMAL"), None
     )
-    base_form = normal_form or formless_form
+    overridden_base_form = next(
+        (
+            form
+            for form in forms
+            if form.form_id in form_overrides
+            and form_overrides[form.form_id].decision == overrides_m.FormDecision.BASE
+        ),
+        None,
+    )
+    base_form = overridden_base_form or normal_form or formless_form
 
     distinct_forms = []
     merge_target_form_ids = {}
@@ -250,6 +267,10 @@ def _lay_out_species(species, species_forms, costume_form_ids, form_overrides):
         merge_target_form_ids,
         undecided_forms,
         override_variant_regions,
+        is_base_form_overridden=overridden_base_form is not None,
+        form_orders=_find_form_orders(
+            forms, form_overrides, overridden_base_form is not None
+        ),
     )
 
 
@@ -265,6 +286,19 @@ def find_form_suffix(form_id, species_id):
     if form_id == species_id:
         return None
     return form_id.removeprefix(f"{species_id}_")
+
+
+def _find_form_orders(forms, form_overrides, is_base_form_overridden):
+    if not is_base_form_overridden:
+        return {form.form_id: form_index for form_index, form in enumerate(forms)}
+    override_ranks = {
+        form_id: override_rank for override_rank, form_id in enumerate(form_overrides)
+    }
+    # A form no override line names follows those that one names.
+    return {
+        form.form_id: override_ranks.get(form.form_id, len(override_ranks) + form_index)
+        for form_index, form in enumerate(forms)
+    }
 
 
 def _classify_forms(layouts):
@@ -364,7 +398,11 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
         representative_form = entry_forms[0]
         is_base_entry = entry_id == layout.species_id
         if is_base_entry:
-            name = species.name
+            name = (
+                f"{species.name} ({_build_form_label(representative_form)})"
+                if layout.is_base_form_overridden
+                else species.name
+            )
             variant_region = None
         else:
             name = f"{species.name} ({_build_form_label(representative_form)})"
@@ -380,7 +418,9 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
         form_suffixes = tuple(
             find_form_suffix(form.form_id, form.species_id) for form in entry_forms
         )
-        form_order = -1 if is_base_entry else layout.forms.index(representative_form)
+        form_order = (
+            -1 if is_base_entry else layout.form_orders[representative_form.form_id]
+        )
         drafts.append(
             EntryDraft(
                 entry_id,

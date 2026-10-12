@@ -133,6 +133,15 @@ def fetch_account(token):
         raise _translate_http_error(error) from error
 
 
+def reveal_coordinates(reveal_code):
+    """Return a spawn's coordinates, as `lat,lng`."""
+    try:
+        content = http_m.fetch_json(build_reveal_url(reveal_code))
+    except urllib.error.HTTPError as error:
+        raise _translate_http_error(error) from error
+    return content["coords"]
+
+
 def build_reveal_url(reveal_code):
     # Encoded as the site's pages encode it, a `/` included.
     return f"{API_BASE_URL}/reveal/{urllib.parse.quote(reveal_code, safe='')}"

@@ -16,7 +16,7 @@ def render_spawn_watch_page(cfg):
     st.caption(
         "While on, the watch searches pogocoordinates.com at the set interval for "
         "spawns that will be shundos for your account and are on the hunt list, and "
-        "posts each new one to Discord with its coordinates link."
+        "posts each new one to Discord with its coordinates."
     )
     login_column, discord_column = st.columns(2)
     with login_column:
@@ -81,28 +81,41 @@ def _render_discord_settings(cfg):
 
 def _render_watch_settings(db_file_path):
     st.subheader("Watch")
+    # The widgets show the stored settings, which the watch itself changes when
+    # a login is refused, and store a change as soon as it is made.
     config = spawn_watch_m.load_watch_config(db_file_path)
+    st.session_state["watch_is_enabled"] = config.is_enabled
+    st.session_state["watch_check_interval_minutes_nb"] = int(
+        config.check_interval_duration.total_seconds() // 60
+    )
     min_interval_minutes_nb = int(
         spawn_watch_m.MIN_CHECK_INTERVAL_DURATION.total_seconds() // 60
     )
-    is_enabled = st.toggle("Watch on", value=config.is_enabled)
-    check_interval_minutes_nb = st.number_input(
+    st.toggle(
+        "Watch on",
+        key="watch_is_enabled",
+        on_change=_save_watch_settings,
+        args=(db_file_path,),
+    )
+    st.number_input(
         "Check interval (minutes)",
         min_value=min_interval_minutes_nb,
-        value=int(config.check_interval_duration.total_seconds() // 60),
         step=1,
+        key="watch_check_interval_minutes_nb",
+        on_change=_save_watch_settings,
+        args=(db_file_path,),
     )
-    check_interval_duration = datetime.timedelta(minutes=check_interval_minutes_nb)
-    if (is_enabled, check_interval_duration) != (
-        config.is_enabled,
-        config.check_interval_duration,
-    ):
-        spawn_watch_m.save_watch_config(
-            db_file_path, is_enabled, check_interval_duration
-        )
     st.caption(
         "A check starts within 30 seconds of turning the watch on, unless the last "
         "one is more recent than the interval."
+    )
+
+
+def _save_watch_settings(db_file_path):
+    spawn_watch_m.save_watch_config(
+        db_file_path,
+        st.session_state["watch_is_enabled"],
+        datetime.timedelta(minutes=st.session_state["watch_check_interval_minutes_nb"]),
     )
 
 
@@ -112,10 +125,17 @@ def _render_watch_records(db_file_path):
     alerts = spawn_watch_m.load_recent_alerts(db_file_path)
     if alerts:
         st.dataframe(
-            alerts,
+            [
+                {
+                    **alert,
+                    "alert_time": _format_local_time(alert["alert_time"]),
+                    "despawn_time": _format_local_time(alert["despawn_time"]),
+                }
+                for alert in alerts
+            ],
             hide_index=True,
             column_config={
-                "coordinates": st.column_config.LinkColumn(display_text="Open")
+                "reveal_url": st.column_config.LinkColumn("reveal", display_text="Open")
             },
         )
     else:
@@ -123,6 +143,21 @@ def _render_watch_records(db_file_path):
     st.subheader("Recent checks")
     checks = spawn_watch_m.load_recent_checks(db_file_path)
     if checks:
-        st.dataframe(checks, hide_index=True)
+        st.dataframe(
+            [
+                {**check, "check_time": _format_local_time(check["check_time"])}
+                for check in checks
+            ],
+            hide_index=True,
+        )
     else:
         st.caption("No check yet.")
+
+
+def _format_local_time(iso_time_text):
+    """Return a stored time in the computer's time zone, to the second."""
+    return (
+        datetime.datetime.fromisoformat(iso_time_text)
+        .astimezone()
+        .strftime("%Y-%m-%d %H:%M:%S")
+    )

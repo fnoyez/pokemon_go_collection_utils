@@ -60,13 +60,19 @@ def _ensure_entry_icon(entry, icons_folder_path, today):
 
 def build_icon_candidate_urls(entry, pogo_assets_base_url, pokeapi_base_url):
     """Return (is_shiny, url) pairs to try in order: Pokémon GO icons first, shiny first."""
-    form_suffixes = sorted(
-        set(entry.form_suffixes), key=lambda suffix: (suffix is not None, suffix or "")
-    )
-    asset_names = [
-        f"pm{entry.dex_number}" if suffix is None else f"pm{entry.dex_number}.f{suffix}"
-        for suffix in form_suffixes
-    ]
+    # The entry's representative form comes first. An asset names a form by
+    # its suffix or by its whole identifier (`pm201.fUNOWN_A`), and the
+    # species' usual form by no suffix at all.
+    asset_names = []
+    for form_id, suffix in zip(entry.form_ids, entry.form_suffixes):
+        if suffix in (None, "NORMAL"):
+            form_asset_names = [f"pm{entry.dex_number}"]
+        else:
+            form_asset_names = [
+                f"pm{entry.dex_number}.f{suffix}",
+                f"pm{entry.dex_number}.f{form_id}",
+            ]
+        asset_names.extend(name for name in form_asset_names if name not in asset_names)
     return [
         *((True, f"{pogo_assets_base_url}/{name}.s.icon.png") for name in asset_names),
         *((False, f"{pogo_assets_base_url}/{name}.icon.png") for name in asset_names),

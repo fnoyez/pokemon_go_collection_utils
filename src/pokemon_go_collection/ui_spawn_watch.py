@@ -155,9 +155,9 @@ def _render_watch_records(db_file_path):
 
 
 def _format_local_time(iso_time_text):
-    """Return a stored time in the computer's time zone, to the second."""
+    """Return a stored time in the computer's time zone, to the second, with its offset."""
     return (
         datetime.datetime.fromisoformat(iso_time_text)
         .astimezone()
-        .strftime("%Y-%m-%d %H:%M:%S")
+        .isoformat(sep=" ", timespec="seconds")
     )

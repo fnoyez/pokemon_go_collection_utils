@@ -405,6 +405,43 @@ def test_build_catalog_splits_a_species_whose_base_form_an_override_chooses():
     ]
 
 
+def test_build_catalog_names_a_form_by_its_symbol():
+    game_master = game_master_m.GameMaster(
+        forms=tuple(
+            make_form(form_id, "UNOWN", 201, (136, 91, 134), ("PSYCHIC",))
+            for form_id in ("UNOWN", "UNOWN_A", "UNOWN_EXCLAMATION_POINT")
+        ),
+        costume_form_ids=frozenset(),
+        timestamp=datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc),
+    )
+    form_overrides = {
+        form_id: overrides_m.FormOverride(
+            form_id=form_id,
+            decision=decision,
+            target_form_id=None,
+            variant_region=None,
+        )
+        for form_id, decision in (
+            ("UNOWN_A", overrides_m.FormDecision.BASE),
+            ("UNOWN_EXCLAMATION_POINT", overrides_m.FormDecision.DISTINCT),
+        )
+    }
+    unown_species = [
+        species for species in NATIONAL_DEX_SPECIES if species.dex_number == 201
+    ]
+
+    entries = catalog_m.build_catalog(
+        unown_species,
+        game_master,
+        form_overrides,
+        pvpoke_species=[],
+        shiny_releases=[],
+        release_override_entry_ids=frozenset(),
+    )
+
+    assert [entry.name for entry in entries] == ["Unown (A)", "Unown (!)"]
+
+
 def get_build_catalog_statuses_test_data():
     test_cases = [
         {

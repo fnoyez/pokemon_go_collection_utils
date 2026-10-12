@@ -24,6 +24,13 @@ _REGIONAL_FORM_TOKEN_ADJECTIVES = {
     "PALDEA": "Paldean",
 }
 
+# How a form suffix written as words reads in an entry's name, where the name
+# shows a symbol.
+_FORM_SUFFIX_LABELS = {
+    "EXCLAMATION_POINT": "!",
+    "QUESTION_MARK": "?",
+}
+
 
 @dataclasses.dataclass(frozen=True)
 class CatalogEntry:
@@ -439,7 +446,10 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
 
 def _build_form_label(form):
     """Name a form from its suffix: `TAUROS_PALDEA_AQUA` reads `Paldean Aqua`."""
-    suffix_tokens = find_form_suffix(form.form_id, form.species_id).split("_")
+    suffix = find_form_suffix(form.form_id, form.species_id)
+    if suffix in _FORM_SUFFIX_LABELS:
+        return _FORM_SUFFIX_LABELS[suffix]
+    suffix_tokens = suffix.split("_")
     words = [
         _REGIONAL_FORM_TOKEN_ADJECTIVES.get(token, token.capitalize())
         for token in suffix_tokens

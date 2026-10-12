@@ -10,10 +10,10 @@ The spawn watch searches, at a fixed interval, for spawns that will be shundos f
 |---|---|
 | `GET /pokemon/catalog?costumes=true` | The service's forms, each with its Pokédex number, its numeric identifier and its game master form name (`TAUROS_PALDEA_AQUA`). Public. |
 | `POST /search` | The spawns matching a search, at most 10 for a logged-in account. Each holds an `encounter_id`, the Pokédex number and form, CP, level, IVs, the town, the despawn time and a `reveal_code`. |
-| `GET /reveal/<reveal_code>` | The spawn's coordinates. Public, rate limited per hour. |
+| `GET /reveal/<reveal_code>` | The spawn's coordinates, as `lat,lng` in `coords`. Public, rate limited per hour. |
 | `GET /users/me` | The logged-in account, which is how a token is checked. |
 
-The site's terms forbid automated requests beyond what a single human user would generate. The watch stays within that: one search per check, with checks never closer than 5 minutes apart, and it never asks for coordinates itself.
+The site's terms forbid automated requests beyond what a single human user would generate. The watch stays within that: one search per check, with checks never closer than 5 minutes apart, and one reveal per new spawn alerted, which is a few an hour.
 
 ## Login
 
@@ -27,10 +27,11 @@ A search for shinies of the user's account needs the account's login token, whic
 
 1. Build the search from the hunt list: `species_forms` holds the service's identifier of every form the hunt list's entries stand for, matched by Pokédex number and game master form name; a species having an entry none of whose forms the service lists is asked for whole, in `pokemon_ids`. The search asks for shinies of the account (`shiny_only`), a 100% minimum IV, sorted by IV. A search on a form matches the spawns the service reports without a form, such as every ordinary Zorua for `ZORUA_NORMAL`.
 2. Search.
-3. Match each spawn to a hunt list entry. A spawn without a form is the form whose service name ends in `_NORMAL`, or the species' only form; one with a form is matched through the service's catalog by form name, suffix or identifier. A spawn matching no hunt list entry is dropped, and so is one despawning within a minute. A spawn whose form matches nothing in the service's catalog is kept when its species has an entry on the hunt list, with the form as the service gives it in the alert, rather than being dropped on a form name the matching does not know.
+3. Match each spawn to a hunt list entry. A spawn without a form is the form whose service name ends in `_NORMAL`, or the species' only form; one with a form is matched through the service's catalog by form name, suffix or identifier, ignoring case and punctuation: the service writes `Alola` for the suffix `ALOLA`. A spawn matching no hunt list entry is dropped, and so is one despawning within a minute. A spawn whose form matches nothing in the service's catalog is kept when its species has an entry on the hunt list, with the form as the service gives it in the alert, rather than being dropped on a form name the matching does not know.
 4. Leave out the spawns already alerted, by `encounter_id`.
-5. Send one Discord message listing the new spawns, each with its Pokémon, IVs, CP, level, town, time left and the `/reveal/` link, and record them as alerted. A message that fails to send records nothing, so the next check alerts them again.
-6. Record the check, and delete the checks and alerts older than the retention period (7 days).
+5. Reveal the coordinates of each new spawn. A spawn the service does not reveal keeps its `/reveal/` link instead, and a reveal refused for its rate (429) leaves the following spawns of the check with their link.
+6. Send one Discord message listing the new spawns, each with its Pokémon, IVs, CP, level, town, time left and its coordinates, and record them as alerted. A message that fails to send records nothing, so the next check alerts them again.
+7. Record the check, and delete the checks and alerts older than the retention period (7 days).
 
 The service's catalog is kept as a snapshot in the source snapshots folder, fetched again when it is a day old.
 
@@ -45,6 +46,6 @@ The service's catalog is kept as a snapshot in the source snapshots folder, fetc
 
 - `SPAWN_WATCH_CONFIG` — one row: whether the watch is on, and the interval.
 - `SPAWN_CHECK` — one row per check: its time, status, spawns found and alerts sent, and a note on failure.
-- `SPAWN_ALERT` — one row per spawn alerted, by `encounter_id`: the entry, the spawn's details, its despawn time and when it was alerted.
+- `SPAWN_ALERT` — one row per spawn alerted, by `encounter_id`: the entry, the spawn's details, its despawn time, its coordinates and reveal link, and when it was alerted.
 - `~/.pokemon_go_collection/pogocoordinates_browser_profile/` — the browser profile used to log in.
 - `~/.pokemon_go_collection/secrets/` — the login token and the Discord webhook URL, one file each, readable by the user alone. The webhook URL is set from the tab.

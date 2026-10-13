@@ -23,9 +23,6 @@ logger = logging.getLogger(__name__)
 # no caller may lower it.
 MIN_CHECK_INTERVAL_DURATION = datetime.timedelta(minutes=5)
 
-# Discord refuses a message longer than this many characters.
-_DISCORD_MESSAGE_MAX_LENGTH = 2000
-
 _AUTH_FAILURE_MESSAGE = (
     "The pogocoordinates.com login was refused, so the spawn watch is off. Log in "
     "again from the Spawn watch tab, then turn the watch back on."
@@ -181,20 +178,21 @@ def run_spawn_check(cfg, now, retention_duration=datetime.timedelta(days=7)):
             if match.spawn.encounter_id not in alerted_encounter_ids
         ]
     )
-    try:
-        for message in build_alert_messages(new_matches, now):
-            discord_m.post_webhook_message(webhook_url, message)
-    except (urllib.error.URLError, TimeoutError) as error:
+    alerted_matches, error = post_alerts(webhook_url, new_matches, now)
+    # The matches alerted before a message failed are recorded, so the next
+    # check alerts only the others again.
+    record_alerts(cfg.db_file_path, alerted_matches, now)
+    if error is not None:
         record_check(
             cfg.db_file_path,
             now,
             CheckStatus.FAILURE,
             spawns_nb=len(spawns),
+            alerts_nb=len(alerted_matches),
             note=f"Discord message not sent: {error}",
         )
         return CheckOutcome(CheckStatus.FAILURE)
 
-    record_alerts(cfg.db_file_path, new_matches, now)
     record_check(
         cfg.db_file_path,
         now,
@@ -443,22 +441,23 @@ def reveal_coordinates(matches):
     return revealed_matches
 
 
-def build_alert_messages(matches, now):
-    """Return the Discord messages listing the matches, each within Discord's length limit."""
-    messages = []
-    lines = []
+def post_alerts(webhook_url, matches, now):
+    """Post one Discord message per match, in order, stopping at the first failure.
+
+    Return the matches posted, and the error that stopped the posting or None.
+    """
+    alerted_matches = []
     for match in matches:
-        line = _build_alert_line(match, now)
-        if lines and len("\n".join([*lines, line])) > _DISCORD_MESSAGE_MAX_LENGTH:
-            messages.append("\n".join(lines))
-            lines = []
-        lines.append(line)
-    if lines:
-        messages.append("\n".join(lines))
-    return messages
+        try:
+            discord_m.post_webhook_message(webhook_url, build_alert_message(match, now))
+        except (urllib.error.URLError, TimeoutError) as error:
+            return alerted_matches, error
+        alerted_matches.append(match)
+    return alerted_matches, None
 
 
-def _build_alert_line(match, now):
+def build_alert_message(match, now):
+    """Return the Discord message alerting on one match."""
     spawn = match.spawn
     if match.is_form_recognized:
         name = match.target.name

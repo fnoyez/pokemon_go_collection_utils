@@ -1,4 +1,5 @@
 import datetime
+import urllib.error
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import patch
 
@@ -6,6 +7,7 @@ import pytest
 
 from pokemon_go_collection import migrate as migrate_m
 from pokemon_go_collection.services import spawn_watch as spawn_watch_m
+from pokemon_go_collection.sources import discord as discord_m
 from pokemon_go_collection.sources import pogocoordinates as pogocoordinates_m
 
 NOW = datetime.datetime(2026, 10, 10, 20, 0, tzinfo=datetime.timezone.utc)
@@ -353,89 +355,60 @@ def test_find_first_check_time(last_check_time, config, expected_time):
     )
 
 
-def test_build_alert_messages_keeps_each_message_within_discord_limit():
-    matches = [
-        spawn_watch_m.SpawnMatch(
-            make_spawn(str(index), 570), ZORUA, is_form_recognized=True
-        )
-        for index in range(30)
-    ]
-
-    messages = spawn_watch_m.build_alert_messages(matches, NOW)
-
-    assert len(messages) > 1
-    assert all(len(message) <= 2000 for message in messages)
-    assert sum(message.count("**Zorua**") for message in messages) == 30
-
-
-def get_build_alert_messages_test_data():
+def get_build_alert_message_test_data():
     spawn = make_spawn("1", 570)
     test_cases = [
         {
             "id": "coordinates-revealed",
-            "matches": [
-                spawn_watch_m.SpawnMatch(
-                    spawn,
-                    ZORUA,
-                    is_form_recognized=True,
-                    coordinates="34.6512122,135.5342254",
-                )
-            ],
-            "expected_messages": [
-                (
-                    "**Zorua** 15/15/15 · CP 500 · L20 · Orléans, Loiret, France · "
-                    "10 min left · 34.6512122,135.5342254"
-                )
-            ],
+            "match": spawn_watch_m.SpawnMatch(
+                spawn,
+                ZORUA,
+                is_form_recognized=True,
+                coordinates="34.6512122,135.5342254",
+            ),
+            "expected_message": (
+                "**Zorua** 15/15/15 · CP 500 · L20 · Orléans, Loiret, France · "
+                "10 min left · 34.6512122,135.5342254"
+            ),
         },
         {
             "id": "coordinates-not-revealed",
-            "matches": [
-                spawn_watch_m.SpawnMatch(spawn, ZORUA, is_form_recognized=True)
-            ],
-            "expected_messages": [
-                (
-                    "**Zorua** 15/15/15 · CP 500 · L20 · Orléans, Loiret, France · "
-                    "10 min left · [coordinates]"
-                    "(<https://coordinates-api.pokemongopro.com/reveal/code-1>)"
-                )
-            ],
+            "match": spawn_watch_m.SpawnMatch(spawn, ZORUA, is_form_recognized=True),
+            "expected_message": (
+                "**Zorua** 15/15/15 · CP 500 · L20 · Orléans, Loiret, France · "
+                "10 min left · [coordinates]"
+                "(<https://coordinates-api.pokemongopro.com/reveal/code-1>)"
+            ),
         },
         {
             "id": "form-not-recognized",
-            "matches": [
-                spawn_watch_m.SpawnMatch(
-                    make_spawn("1", 570, form="Spooky"),
-                    ZORUA,
-                    is_form_recognized=False,
-                    coordinates="34.6512122,135.5342254",
-                )
-            ],
-            "expected_messages": [
-                (
-                    "**Pokemon 570 (form Spooky, not recognized)** 15/15/15 · "
-                    "CP 500 · L20 · Orléans, Loiret, France · 10 min left · "
-                    "34.6512122,135.5342254"
-                )
-            ],
+            "match": spawn_watch_m.SpawnMatch(
+                make_spawn("1", 570, form="Spooky"),
+                ZORUA,
+                is_form_recognized=False,
+                coordinates="34.6512122,135.5342254",
+            ),
+            "expected_message": (
+                "**Pokemon 570 (form Spooky, not recognized)** 15/15/15 · "
+                "CP 500 · L20 · Orléans, Loiret, France · 10 min left · "
+                "34.6512122,135.5342254"
+            ),
         },
     ]
 
     return [
         pytest.param(
-            test_case["matches"],
-            test_case["expected_messages"],
+            test_case["match"],
+            test_case["expected_message"],
             id=test_case["id"],
         )
         for test_case in test_cases
     ]
 
 
-@pytest.mark.parametrize(
-    "matches,expected_messages", get_build_alert_messages_test_data()
-)
-def test_build_alert_messages(matches, expected_messages):
-    assert spawn_watch_m.build_alert_messages(matches, NOW) == expected_messages
+@pytest.mark.parametrize("match,expected_message", get_build_alert_message_test_data())
+def test_build_alert_message(match, expected_message):
+    assert spawn_watch_m.build_alert_message(match, NOW) == expected_message
 
 
 def test_reveal_coordinates_stops_revealing_when_rate_limited():
@@ -461,6 +434,47 @@ def test_reveal_coordinates_stops_revealing_when_rate_limited():
         None,
     ]
     assert reveal_mock.call_count == 2
+
+
+def test_post_alerts_posts_one_message_per_match():
+    matches = [
+        spawn_watch_m.SpawnMatch(
+            make_spawn(encounter_id, 570), ZORUA, is_form_recognized=True
+        )
+        for encounter_id in ("1", "2")
+    ]
+
+    with patch.object(discord_m, "post_webhook_message") as post_mock:
+        alerted_matches, error = spawn_watch_m.post_alerts(
+            "https://discord.example/webhook", matches, NOW
+        )
+
+    assert alerted_matches == matches
+    assert error is None
+    assert [call.args[1] for call in post_mock.call_args_list] == [
+        spawn_watch_m.build_alert_message(match, NOW) for match in matches
+    ]
+
+
+def test_post_alerts_stops_at_the_first_failed_message():
+    matches = [
+        spawn_watch_m.SpawnMatch(
+            make_spawn(encounter_id, 570), ZORUA, is_form_recognized=True
+        )
+        for encounter_id in ("1", "2", "3")
+    ]
+    post_error = urllib.error.URLError("unreachable")
+
+    with patch.object(
+        discord_m, "post_webhook_message", side_effect=[None, post_error]
+    ) as post_mock:
+        alerted_matches, error = spawn_watch_m.post_alerts(
+            "https://discord.example/webhook", matches, NOW
+        )
+
+    assert alerted_matches == matches[:1]
+    assert error is post_error
+    assert post_mock.call_count == 2
 
 
 def get_save_watch_config_test_data():

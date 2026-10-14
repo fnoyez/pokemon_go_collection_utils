@@ -8,6 +8,9 @@ import logging
 import random
 import re
 import urllib.error
+import zoneinfo
+
+import timezonefinder
 
 from pokemon_go_collection import db as db_m
 from pokemon_go_collection import secret_files as secret_files_m
@@ -475,8 +478,22 @@ def build_alert_message(match, now):
         reveal_url = pogocoordinates_m.build_reveal_url(spawn.reveal_code)
         parts.append(f"[coordinates](<{reveal_url}>)")
     else:
+        local_time = find_local_time(match.coordinates, now)
+        if local_time is not None:
+            parts.append(f"Local time: {local_time:%H:%M}")
         parts.append(match.coordinates)
     return " · ".join(parts)
+
+
+def find_local_time(coordinates, now):
+    """Return `now` in the time zone of the `lat,lng` coordinates, or None outside every zone."""
+    lat_text, lng_text = coordinates.split(",")
+    time_zone_name = timezonefinder.timezone_at(
+        lng=float(lng_text), lat=float(lat_text)
+    )
+    if time_zone_name is None:
+        return None
+    return now.astimezone(zoneinfo.ZoneInfo(time_zone_name))
 
 
 def record_alerts(db_file_path, matches, alert_time):

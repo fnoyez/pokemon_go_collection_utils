@@ -368,7 +368,7 @@ def get_build_alert_message_test_data():
             ),
             "expected_message": (
                 "**Zorua** 15/15/15 · CP 500 · L20 · Orléans, Loiret, France · "
-                "10 min left · 34.6512122,135.5342254"
+                "10 min left · Local time: 05:00 · 34.6512122,135.5342254"
             ),
         },
         {
@@ -391,7 +391,7 @@ def get_build_alert_message_test_data():
             "expected_message": (
                 "**Pokemon 570 (form Spooky, not recognized)** 15/15/15 · "
                 "CP 500 · L20 · Orléans, Loiret, France · 10 min left · "
-                "34.6512122,135.5342254"
+                "Local time: 05:00 · 34.6512122,135.5342254"
             ),
         },
     ]
@@ -409,6 +409,38 @@ def get_build_alert_message_test_data():
 @pytest.mark.parametrize("match,expected_message", get_build_alert_message_test_data())
 def test_build_alert_message(match, expected_message):
     assert spawn_watch_m.build_alert_message(match, NOW) == expected_message
+
+
+def get_find_local_time_test_data():
+    test_cases = [
+        {
+            "id": "summer-time",
+            "coordinates": "48.126439,11.591259",
+            "expected_time_text": "2026-10-10 22:00:00+02:00",
+        },
+        {
+            "id": "no-summer-time",
+            "coordinates": "34.6512122,135.5342254",
+            "expected_time_text": "2026-10-11 05:00:00+09:00",
+        },
+    ]
+
+    return [
+        pytest.param(
+            test_case["coordinates"],
+            test_case["expected_time_text"],
+            id=test_case["id"],
+        )
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize(
+    "coordinates,expected_time_text", get_find_local_time_test_data()
+)
+def test_find_local_time(coordinates, expected_time_text):
+    local_time = spawn_watch_m.find_local_time(coordinates, NOW)
+    assert local_time.isoformat(sep=" ") == expected_time_text
 
 
 def test_reveal_coordinates_stops_revealing_when_rate_limited():

@@ -8,6 +8,7 @@ A local application to record and monitor the state of a Pokémon GO collection,
 - [docs/catalog.md](docs/catalog.md) — which Pokémon the application lists, how they are grouped and ordered, and where their release statuses come from.
 - [docs/architecture.md](docs/architecture.md) — modules, storage, backups, data refresh, and the icon grid.
 - [docs/spawn_watch.md](docs/spawn_watch.md) — the Discord alerts for shundos spawning now, and how they use pogocoordinates.com.
+- [docs/pvp_ranks.md](docs/pvp_ranks.md) — the PvP concepts (leagues, stat product, ranks) and the PvP ranks tab.
 
 ## Requirements
 

@@ -18,9 +18,11 @@
 - `src/pokemon_go_collection/migrate.py` and `migrations/` — the migration runner and the schema.
 - `src/pokemon_go_collection/regions.py` — the regions and the National Pokédex numbers each introduced.
 - `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `overrides.py`, `icons.py`, `pogocoordinates.py`, `discord.py`; and `http.py`, the download helper they share.
+- `src/pokemon_go_collection/pvp_ranks.py` — the PvP rank computation of [pvp_ranks.md](pvp_ranks.md), pure functions over base stats and CP multipliers.
 - `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
 - `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog tables), `shundos.py` (reading and recording the collection), `hunt_list.py` (the shundo hunt list), `spawn_watch.py` (the spawn watch) and `pogocoordinates_login.py` (its login), `backups.py`.
 - `src/pokemon_go_collection/ui_shundos.py` — the Shundos tab.
+- `src/pokemon_go_collection/ui_pvp_ranks.py` — the PvP ranks tab.
 - `src/pokemon_go_collection/ui_spawn_watch.py` — the Spawn watch tab; the watch itself is `services/spawn_watch.py`, described in [spawn_watch.md](spawn_watch.md).
 - `src/pokemon_go_collection/components/pokemon_grid/` — the clickable icon grid, a Streamlit component (below).
 - `src/pokemon_go_collection/cli.py` — the CLI entry points.
@@ -43,7 +45,8 @@ Paths are validated at startup, and the application stops with an error when one
 
 The schema is the ordered sequence of modules under `src/pokemon_go_collection/migrations/`, each exposing `upgrade(conn)`. At every start, the runner (`migrate.py`) applies, in name order and in one transaction, the modules the `schema_migration` table does not record yet, and records them there; a database that already holds data is backed up first (see *Backups*). Its tables:
 
-- `POKEMON_ENTRY` — the catalog, one row per entry, rebuilt by each refresh. Rows are updated in place, so an entry keeps its identifier from one refresh to the next.
+- `POKEMON_ENTRY` — the catalog, one row per entry, with the base stats of its representative form when the game master has them, rebuilt by each refresh. Rows are updated in place, so an entry keeps its identifier from one refresh to the next.
+- `CP_MULTIPLIER` — the CP multiplier of every level, whole and half, rebuilt by each refresh from the game master.
 - `POKEMON_EVOLUTION` — the evolutions between entries, one row per (source, target) pair, rebuilt by each refresh.
 - `SHUNDO` — the collection's shundos, one row per owned entry, referring to `POKEMON_ENTRY`.
 - `CATALOG_REFRESH` — one row per refresh, with the game master timestamp it used and its outcome.
@@ -64,7 +67,7 @@ A refresh brings the catalog up to date with its sources:
 2. Download the PvPoke game master and the LeekDuck shiny data, replacing their snapshots.
 3. Rebuild the catalog from the sources.
 4. Download the icons missing from the cache.
-5. Write the catalog, with each entry's icon, to `POKEMON_ENTRY`, in one transaction.
+5. Write the catalog, with each entry's icon and base stats, to `POKEMON_ENTRY`, and the CP multipliers to `CP_MULTIPLIER`, in one transaction.
 6. Record the refresh in `CATALOG_REFRESH`.
 
 A source that cannot be reached (no network, a site down) leaves its last snapshot in use, and the refresh records a warning; a refresh with no snapshot at all to fall back on fails.

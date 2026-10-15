@@ -34,6 +34,14 @@ The Pokémon to look for, to fill the collection's missing shundos, are download
 
 The design is in [spawn_watch.md](spawn_watch.md).
 
+### PvP ranks
+
+- For a Pokémon and a PvP league, the application lists the IV spreads by rank, the best first, so the one to hunt for is known, including for a Pokémon not released yet.
+- For several Pokémon and leagues, it gives the rank of IV spreads typed in, such as those of the specimens available, ordered by rank.
+- The ranks follow the stat product under the league's CP cap, and take into account the minimum IV of how the specimen is obtained and the level bonuses beyond level 50.
+
+The concepts and the design are in [pvp_ranks.md](pvp_ranks.md).
+
 ### What counts as a distinct Pokémon
 
 - Regional forms (Alolan, Galarian, Hisuian, Paldean) are distinct Pokémon: they have their own stats and types, and some start evolutionary lines of their own (Galarian Farfetch'd evolves into Sirfetch'd).

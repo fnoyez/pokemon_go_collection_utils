@@ -46,6 +46,7 @@ Paths are validated at startup, and the application stops with an error when one
 The schema is the ordered sequence of modules under `src/pokemon_go_collection/migrations/`, each exposing `upgrade(conn)`. At every start, the runner (`migrate.py`) applies, in name order and in one transaction, the modules the `schema_migration` table does not record yet, and records them there; a database that already holds data is backed up first (see *Backups*). Its tables:
 
 - `POKEMON_ENTRY` — the catalog, one row per entry, with the base stats of its representative form when the game master has them, rebuilt by each refresh. Rows are updated in place, so an entry keeps its identifier from one refresh to the next.
+- `TEMPORARY_EVOLUTION` — the Mega and Primal evolutions of each entry's representative form, with their names and base stats, rebuilt by each refresh.
 - `CP_MULTIPLIER` — the CP multiplier of every level, whole and half, rebuilt by each refresh from the game master.
 - `POKEMON_EVOLUTION` — the evolutions between entries, one row per (source, target) pair, rebuilt by each refresh.
 - `SHUNDO` — the collection's shundos, one row per owned entry, referring to `POKEMON_ENTRY`.
@@ -67,7 +68,7 @@ A refresh brings the catalog up to date with its sources:
 2. Download the PvPoke game master and the LeekDuck shiny data, replacing their snapshots.
 3. Rebuild the catalog from the sources.
 4. Download the icons missing from the cache.
-5. Write the catalog, with each entry's icon and base stats, to `POKEMON_ENTRY`, and the CP multipliers to `CP_MULTIPLIER`, in one transaction.
+5. Write the catalog, with each entry's icon and base stats, to `POKEMON_ENTRY`, the Mega and Primal evolutions to `TEMPORARY_EVOLUTION`, and the CP multipliers to `CP_MULTIPLIER`, in one transaction.
 6. Record the refresh in `CATALOG_REFRESH`.
 
 A source that cannot be reached (no network, a site down) leaves its last snapshot in use, and the refresh records a warning; a refresh with no snapshot at all to fall back on fails.

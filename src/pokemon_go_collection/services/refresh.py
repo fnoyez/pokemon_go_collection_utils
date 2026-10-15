@@ -177,6 +177,11 @@ def write_catalog(conn, entries, icon_file_names):
         DELETE FROM pokemon_evolution
         """
     )
+    conn.execute(
+        """
+        DELETE FROM temporary_evolution
+        """
+    )
     conn.executemany(
         """
         DELETE FROM pokemon_entry
@@ -240,6 +245,27 @@ def write_catalog(conn, entries, icon_file_names):
             (entry.entry_id, target_entry_id)
             for entry in entries
             for target_entry_id in entry.evolution_target_entry_ids
+        ],
+    )
+    conn.executemany(
+        """
+        INSERT INTO temporary_evolution (
+          entry_id, temporary_evolution_id, name,
+          base_attack, base_defense, base_stamina
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                entry.entry_id,
+                temporary_evolution.temporary_evolution_id,
+                catalog_m.build_temporary_evolution_name(
+                    entry.name, temporary_evolution.temporary_evolution_id
+                ),
+                *temporary_evolution.stats,
+            )
+            for entry in entries
+            for temporary_evolution in entry.temporary_evolutions
         ],
     )
 

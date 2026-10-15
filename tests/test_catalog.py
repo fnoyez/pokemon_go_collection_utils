@@ -91,7 +91,15 @@ NATIONAL_DEX_SPECIES = [
 ]
 
 
-def make_form(form_id, species_id, dex_number, stats, types, evolutions=()):
+def make_form(
+    form_id,
+    species_id,
+    dex_number,
+    stats,
+    types,
+    evolutions=(),
+    temporary_evolutions=(),
+):
     return game_master_m.PokemonForm(
         form_id=form_id,
         species_id=species_id,
@@ -100,13 +108,24 @@ def make_form(form_id, species_id, dex_number, stats, types, evolutions=()):
         types=types,
         evolutions=evolutions,
         pokemon_class=None,
+        temporary_evolutions=temporary_evolutions,
     )
 
 
 GAME_MASTER = game_master_m.GameMaster(
     forms=(
         make_form("PIKACHU", "PIKACHU", 25, (112, 96, 111), ("ELECTRIC",)),
-        make_form("PIKACHU_NORMAL", "PIKACHU", 25, (112, 96, 111), ("ELECTRIC",)),
+        # Pikachu has no Mega evolution; this one stands for any.
+        make_form(
+            "PIKACHU_NORMAL",
+            "PIKACHU",
+            25,
+            (112, 96, 111),
+            ("ELECTRIC",),
+            temporary_evolutions=(
+                game_master_m.TemporaryEvolution("MEGA", (200, 150, 111)),
+            ),
+        ),
         make_form("PIKACHU_FALL_2019", "PIKACHU", 25, (112, 96, 111), ("ELECTRIC",)),
         make_form("FARFETCHD", "FARFETCHD", 83, (124, 115, 141), ("NORMAL", "FLYING")),
         make_form(
@@ -282,6 +301,26 @@ def test_build_catalog_names_entries_and_merges_forms():
         ("FARFETCHD_GALARIAN",),
     )
     assert actual_entries["BASCULEGION"] == ("Basculegion", ("BASCULEGION",))
+
+
+def test_build_catalog_takes_the_temporary_evolutions_of_the_representative_form():
+    entries = catalog_m.build_catalog(
+        NATIONAL_DEX_SPECIES,
+        GAME_MASTER,
+        FORM_OVERRIDES,
+        PVPOKE_SPECIES,
+        SHINY_RELEASES,
+        RELEASE_OVERRIDE_ENTRY_IDS,
+    )
+
+    actual_temporary_evolutions = {
+        entry.entry_id: entry.temporary_evolutions for entry in entries
+    }
+
+    assert actual_temporary_evolutions["PIKACHU"] == (
+        game_master_m.TemporaryEvolution("MEGA", (200, 150, 111)),
+    )
+    assert actual_temporary_evolutions["FARFETCHD"] == ()
 
 
 def test_build_catalog_links_evolutions():
@@ -517,6 +556,52 @@ def test_build_catalog_statuses(
     assert (entry.is_released, entry.shiny_release_date) == (
         expected_is_released,
         expected_shiny_release_date,
+    )
+
+
+def get_build_temporary_evolution_name_test_data():
+    test_cases = [
+        {
+            "id": "mega",
+            "entry_name": "Venusaur",
+            "temporary_evolution_id": "MEGA",
+            "expected_name": "Mega Venusaur",
+        },
+        {
+            "id": "mega-x",
+            "entry_name": "Charizard",
+            "temporary_evolution_id": "MEGA_X",
+            "expected_name": "Mega Charizard X",
+        },
+        {
+            "id": "primal",
+            "entry_name": "Kyogre",
+            "temporary_evolution_id": "PRIMAL",
+            "expected_name": "Primal Kyogre",
+        },
+    ]
+
+    return [
+        pytest.param(
+            test_case["entry_name"],
+            test_case["temporary_evolution_id"],
+            test_case["expected_name"],
+            id=test_case["id"],
+        )
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize(
+    "entry_name,temporary_evolution_id,expected_name",
+    get_build_temporary_evolution_name_test_data(),
+)
+def test_build_temporary_evolution_name(
+    entry_name, temporary_evolution_id, expected_name
+):
+    assert (
+        catalog_m.build_temporary_evolution_name(entry_name, temporary_evolution_id)
+        == expected_name
     )
 
 

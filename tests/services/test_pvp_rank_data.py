@@ -4,6 +4,7 @@ from pokemon_go_collection import migrate as migrate_m
 from pokemon_go_collection import regions as regions_m
 from pokemon_go_collection.services import pvp_rank_data as pvp_rank_data_m
 from pokemon_go_collection.services import refresh as refresh_m
+from pokemon_go_collection.sources import game_master as game_master_m
 
 
 def test_load_rankable_pokemons_leaves_out_entries_without_stats(tmp_path):
@@ -20,11 +21,13 @@ def test_load_rankable_pokemons_leaves_out_entries_without_stats(tmp_path):
         )
 
     assert pvp_rank_data_m.load_rankable_pokemons(db_file_path) == [
-        pvp_rank_data_m.RankablePokemon("AZUMARILL", "Azumarill", (112, 152, 225))
+        pvp_rank_data_m.RankablePokemon("AZUMARILL", None, "Azumarill", (112, 152, 225))
     ]
 
 
-def make_entry(entry_id, dex_number, display_order, base_stats):
+def make_entry(
+    entry_id, dex_number, display_order, base_stats, temporary_evolutions=()
+):
     return catalog_m.CatalogEntry(
         entry_id=entry_id,
         dex_number=dex_number,
@@ -36,6 +39,7 @@ def make_entry(entry_id, dex_number, display_order, base_stats):
         display_order=display_order,
         pokemon_class=None,
         base_stats=base_stats,
+        temporary_evolutions=temporary_evolutions,
         is_baby=False,
         evolution_target_entry_ids=(),
         is_released=True,
@@ -63,6 +67,57 @@ def test_load_rankable_pokemons_orders_by_dex_number_then_catalog_order(tmp_path
         "RAICHU",
         "RAICHU_ALOLA",
         "MEOWTH",
+    ]
+
+
+def test_load_rankable_pokemons_lists_temporary_evolutions_after_their_entry(
+    tmp_path,
+):
+    db_file_path = tmp_path / "collection.sqlite"
+    migrate_m.init_db(db_file_path)
+    with db_m.db_conn(db_file_path) as conn:
+        refresh_m.write_catalog(
+            conn,
+            [
+                make_entry(
+                    "CHARIZARD",
+                    6,
+                    5,
+                    (223, 173, 186),
+                    temporary_evolutions=(
+                        game_master_m.TemporaryEvolution("MEGA_Y", (319, 212, 186)),
+                        game_master_m.TemporaryEvolution("MEGA_X", (273, 213, 186)),
+                    ),
+                ),
+                make_entry("SQUIRTLE", 7, 6, (94, 121, 127)),
+                make_entry(
+                    "KYOGRE",
+                    382,
+                    381,
+                    (270, 228, 205),
+                    temporary_evolutions=(
+                        game_master_m.TemporaryEvolution("PRIMAL", (353, 268, 205)),
+                    ),
+                ),
+            ],
+            {"CHARIZARD": None, "SQUIRTLE": None, "KYOGRE": None},
+        )
+
+    assert pvp_rank_data_m.load_rankable_pokemons(db_file_path) == [
+        pvp_rank_data_m.RankablePokemon(
+            "CHARIZARD", None, "Charizard", (223, 173, 186)
+        ),
+        pvp_rank_data_m.RankablePokemon(
+            "CHARIZARD", "MEGA_X", "Mega Charizard X", (273, 213, 186)
+        ),
+        pvp_rank_data_m.RankablePokemon(
+            "CHARIZARD", "MEGA_Y", "Mega Charizard Y", (319, 212, 186)
+        ),
+        pvp_rank_data_m.RankablePokemon("SQUIRTLE", None, "Squirtle", (94, 121, 127)),
+        pvp_rank_data_m.RankablePokemon("KYOGRE", None, "Kyogre", (270, 228, 205)),
+        pvp_rank_data_m.RankablePokemon(
+            "KYOGRE", "PRIMAL", "Primal Kyogre", (353, 268, 205)
+        ),
     ]
 
 

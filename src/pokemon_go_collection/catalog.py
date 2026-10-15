@@ -50,6 +50,8 @@ class CatalogEntry:
     # The (attack, defense, stamina) base stats of its representative form;
     # None for a species absent from the game master.
     base_stats: tuple[int, int, int] | None
+    # The Mega and Primal evolutions of its representative form.
+    temporary_evolutions: tuple[game_master_m.TemporaryEvolution, ...]
     is_baby: bool
     # The entries it evolves into, in game master order.
     evolution_target_entry_ids: tuple[str, ...]
@@ -66,6 +68,12 @@ def is_entry_released(is_released, shiny_release_date, today):
 
 def is_shiny_released(shiny_release_date, today):
     return shiny_release_date is not None and shiny_release_date <= today
+
+
+def build_temporary_evolution_name(entry_name, temporary_evolution_id):
+    """Name a Mega or Primal evolution: MEGA_X of Charizard reads `Mega Charizard X`."""
+    kind, *suffix_tokens = temporary_evolution_id.split("_")
+    return " ".join([kind.capitalize(), entry_name, *suffix_tokens])
 
 
 def build_catalog(
@@ -107,6 +115,7 @@ def build_catalog(
             display_order,
             draft.pokemon_class,
             draft.base_stats,
+            draft.temporary_evolutions,
             draft.dex_number in baby_dex_numbers,
             tuple(evolution_edges.get(draft.entry_id, [])),
             is_released=(
@@ -137,6 +146,7 @@ class EntryDraft:
     variant_region: regions_m.Region | None
     pokemon_class: game_master_m.PokemonClass | None
     base_stats: tuple[int, int, int] | None
+    temporary_evolutions: tuple[game_master_m.TemporaryEvolution, ...]
 
 
 def build_entry_drafts(national_dex_species, game_master, form_overrides):
@@ -395,6 +405,7 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
                 variant_region=None,
                 pokemon_class=None,
                 base_stats=None,
+                temporary_evolutions=(),
             )
         ]
 
@@ -446,6 +457,7 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
                 variant_region,
                 representative_form.pokemon_class,
                 representative_form.stats,
+                representative_form.temporary_evolutions,
             )
         )
     return drafts

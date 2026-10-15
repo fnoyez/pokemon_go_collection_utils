@@ -6,7 +6,7 @@ The catalog is the reference list every feature works on: one entry per distinct
 
 | Source | Provides | Fetched |
 |---|---|---|
-| Game master, `../game_masters/latest/latest.json` (PokeMiners) | The forms each species has in Pokémon GO, with their stats, types and evolutions; the costume flag of each form; the class of the legendary, mythical and ultra beast Pokémon. Form identifiers (`FARFETCHD_GALARIAN`) are the catalog's entry identifiers. | `git pull` of the sibling repository |
+| Game master, `../game_masters/latest/latest.json` (PokeMiners) | The forms each species has in Pokémon GO, with their stats, types and evolutions, and the stats of their Mega and Primal evolutions; the costume flag of each form; the class of the legendary, mythical and ultra beast Pokémon. Form identifiers (`FARFETCHD_GALARIAN`) are the catalog's entry identifiers. | `git pull` of the sibling repository |
 | National Pokédex seed, `data/national_dex.csv` (from PokeAPI) | Every main series species, with its National Pokédex number, English name, the species it evolves from, and whether it is a baby Pokémon. | Once, by `scripts/seed_national_dex.py`; re-run when a main series game introduces new species |
 | PvPoke game master (`pvpoke/pvpoke`, `src/data/gamemaster.json`) | Whether a species or form is released in Pokémon GO. | Each refresh |
 | LeekDuck shiny checklist data (`leekduck.com/shiny/pms.json`) | The date each shiny species or form is, or will be, released in Pokémon GO. | Each refresh |

@@ -42,7 +42,7 @@ The level of a spread is chosen among the levels reachable with the level bonus:
 
 ## Pokémon
 
-The Pokémon offered are the catalog's entries (see [catalog.md](catalog.md), *Catalog entries*) whose base form has stats in the game master: a Pokémon in the game master but not released yet is offered, so a spread can be chosen before its release. They are listed by National Pokédex number, the forms of a species in catalog order, its base form first. An entry stands for its representative form's stats. A refresh stores, with each entry, those base stats, and the CP multipliers of every level.
+The Pokémon offered are the catalog's entries (see [catalog.md](catalog.md), *Catalog entries*) whose base form has stats in the game master: a Pokémon in the game master but not released yet is offered, so a spread can be chosen before its release. So are the Mega and Primal evolutions of their representative forms, with the stats the game master gives them: Mega Venusaur, Mega Charizard X and Mega Charizard Y, Primal Kyogre. They are listed by National Pokédex number, the forms of a species in catalog order, its base form first, each entry followed by its Mega and Primal evolutions. An entry stands for its representative form's stats. A refresh stores, with each entry, those base stats and those of its Mega and Primal evolutions, and the CP multipliers of every level.
 
 ## The tab
 

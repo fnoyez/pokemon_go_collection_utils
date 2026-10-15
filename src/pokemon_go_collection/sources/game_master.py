@@ -28,6 +28,16 @@ _GAME_MASTER_POKEMON_CLASSES = {
 
 
 @dataclasses.dataclass(frozen=True)
+class TemporaryEvolution:
+    """A Mega or Primal evolution of a form."""
+
+    # The game master's identifier without its `TEMP_EVOLUTION_` prefix: MEGA,
+    # MEGA_X, MEGA_Y, PRIMAL.
+    temporary_evolution_id: str
+    stats: tuple[int, int, int]
+
+
+@dataclasses.dataclass(frozen=True)
 class PokemonForm:
     """The game master's settings for one species, or one form of a species."""
 
@@ -39,6 +49,8 @@ class PokemonForm:
     # (species, form) pairs; the form is None when the evolution names none.
     evolutions: tuple[tuple[str, str | None], ...]
     pokemon_class: PokemonClass | None
+    # In game master order.
+    temporary_evolutions: tuple[TemporaryEvolution, ...]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -119,7 +131,6 @@ def parse_game_master(templates, timestamp):
 
 
 def _build_pokemon_form(dex_number, pokemon_settings):
-    stats = pokemon_settings["stats"]
     types = [pokemon_settings["type"]]
     if "type2" in pokemon_settings:
         types.append(pokemon_settings["type2"])
@@ -137,12 +148,26 @@ def _build_pokemon_form(dex_number, pokemon_settings):
         if "pokemonClass" in pokemon_settings
         else None
     )
+    # An override without stats only adjusts the camera or a model of the form.
+    temporary_evolutions = tuple(
+        TemporaryEvolution(
+            override["tempEvoId"].removeprefix("TEMP_EVOLUTION_"),
+            _read_stats(override["stats"]),
+        )
+        for override in pokemon_settings.get("tempEvoOverrides", [])
+        if "stats" in override
+    )
     return PokemonForm(
         form_id=pokemon_settings.get("form", pokemon_settings["pokemonId"]),
         species_id=pokemon_settings["pokemonId"],
         dex_number=dex_number,
-        stats=(stats["baseAttack"], stats["baseDefense"], stats["baseStamina"]),
+        stats=_read_stats(pokemon_settings["stats"]),
         types=tuple(types),
         evolutions=evolutions,
         pokemon_class=pokemon_class,
+        temporary_evolutions=temporary_evolutions,
     )
+
+
+def _read_stats(stats):
+    return (stats["baseAttack"], stats["baseDefense"], stats["baseStamina"])

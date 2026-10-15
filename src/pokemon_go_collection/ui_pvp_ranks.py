@@ -1,6 +1,7 @@
 import streamlit as st
 
 from pokemon_go_collection import pvp_ranks as pvp_ranks_m
+from pokemon_go_collection import rank_names as rank_names_m
 from pokemon_go_collection.services import pvp_rank_data as pvp_rank_data_m
 
 # The labels the tab shows for each choice, part of what the tab is.
@@ -25,6 +26,7 @@ _LEVEL_BONUS_LABELS = {
 # it was made from.
 _BEST_RANKS_KEY = "pvp_best_ranks"
 _IV_SPREAD_RANKS_KEY = "pvp_iv_spread_ranks"
+_RANK_NAMES_KEY = "pvp_rank_names"
 
 
 def render_pvp_ranks_page(db_file_path):
@@ -40,11 +42,15 @@ def render_pvp_ranks_page(db_file_path):
         return
 
     settings = _render_shared_settings()
-    best_ranks_tab, iv_spread_ranks_tab = st.tabs(["Best ranks", "Ranks of IV spreads"])
+    best_ranks_tab, iv_spread_ranks_tab, rank_names_tab = st.tabs(
+        ["Best ranks", "Ranks of IV spreads", "Rank-based names"]
+    )
     with best_ranks_tab:
         _render_best_ranks(pokemons, cp_multipliers, settings)
     with iv_spread_ranks_tab:
         _render_iv_spread_ranks(pokemons, cp_multipliers, settings)
+    with rank_names_tab:
+        _render_rank_names(db_file_path, pokemons, cp_multipliers)
 
 
 def _render_shared_settings():
@@ -218,3 +224,53 @@ def _rank_given_iv_spreads(pokemons, leagues, iv_spreads, cp_multipliers, settin
 
 def _sort_like(ordered_items, items):
     return sorted(items, key=ordered_items.index)
+
+
+def _render_rank_names(db_file_path, pokemons, cp_multipliers):
+    st.caption(
+        "The rank 1 IV spreads and the highest levels safe for trades of a "
+        "Pokémon's evolutionary tree, from a minimum IV of 0 and without level "
+        "bonus, whatever the settings above."
+    )
+    pokemon = st.selectbox(
+        "Pokémon",
+        pokemons,
+        index=None,
+        format_func=lambda pokemon: pokemon.name,
+        placeholder="Type a name",
+        filter_mode="contains",
+        key="rank_names_pokemon",
+    )
+    shows_evolved_little_cup = st.checkbox(
+        "Show the Little Cup for evolved Pokémon", value=False
+    )
+    request = {
+        "pokemon": pokemon,
+        "shows_evolved_little_cup": shows_evolved_little_cup,
+    }
+    if st.button("Build", key="rank_names_button"):
+        missing_inputs = _find_missing_inputs({"a Pokémon": pokemon})
+        if missing_inputs:
+            st.error(f"Missing: {', '.join(missing_inputs)}.")
+        else:
+            entries, evolution_edges = pvp_rank_data_m.load_evolution_tree_data(
+                db_file_path
+            )
+            groups = rank_names_m.build_evolution_tree(
+                entries, evolution_edges, pokemon
+            )
+            st.session_state[_RANK_NAMES_KEY] = {
+                "request": request,
+                "text": rank_names_m.build_rank_names_text(
+                    cp_multipliers, groups, shows_evolved_little_cup
+                ),
+            }
+    result = st.session_state.get(_RANK_NAMES_KEY)
+    if result is not None and result["request"] == request:
+        if result["text"]:
+            st.code(result["text"], language=None)
+        else:
+            st.caption(
+                "Nothing to write: every member's rank 1 is 15/15/15, within each "
+                "cap at level 50."
+            )

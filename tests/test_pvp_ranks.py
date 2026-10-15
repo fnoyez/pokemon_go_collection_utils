@@ -5,18 +5,6 @@ import pytest
 
 import pokemon_go_collection.pvp_ranks as pvp_ranks_m
 
-# The game master's CP multipliers of levels 1 to 55.
-WHOLE_LEVEL_CP_MULTIPLIERS = (
-    0.094, 0.16639787, 0.21573247, 0.25572005, 0.29024988, 0.3210876, 0.34921268,
-    0.3752356, 0.39956728, 0.4225, 0.44310755, 0.4627984, 0.48168495, 0.49985844,
-    0.51739395, 0.5343543, 0.5507927, 0.5667545, 0.5822789, 0.5974, 0.6121573,
-    0.6265671, 0.64065295, 0.65443563, 0.667934, 0.6811649, 0.69414365, 0.7068842,
-    0.7193991, 0.7317, 0.7377695, 0.74378943, 0.74976104, 0.7556855, 0.76156384,
-    0.76739717, 0.7731865, 0.77893275, 0.784637, 0.7903, 0.7953, 0.8003, 0.8053,
-    0.8103, 0.8153, 0.8203, 0.8253, 0.8303, 0.8353, 0.8403, 0.8453, 0.8503, 0.8553,
-    0.8603, 0.8653,
-)  # fmt: skip
-CP_MULTIPLIERS = pvp_ranks_m.build_cp_multipliers(WHOLE_LEVEL_CP_MULTIPLIERS)
 AZUMARILL_BASE_STATS = (112, 152, 225)
 MELMETAL_BASE_STATS = (226, 190, 264)
 # A Pokémon reaching the Great League cap beyond level 50 only.
@@ -48,8 +36,8 @@ def get_build_cp_multipliers_test_data():
 @pytest.mark.parametrize(
     "level,expected_multiplier", get_build_cp_multipliers_test_data()
 )
-def test_build_cp_multipliers(level, expected_multiplier):
-    assert CP_MULTIPLIERS[level] == pytest.approx(expected_multiplier, abs=1e-9)
+def test_build_cp_multipliers(cp_multipliers, level, expected_multiplier):
+    assert cp_multipliers[level] == pytest.approx(expected_multiplier, abs=1e-9)
 
 
 def get_find_reachable_levels_test_data():
@@ -225,6 +213,7 @@ def get_rank_iv_spreads_test_data():
     get_rank_iv_spreads_test_data(),
 )
 def test_rank_iv_spreads(
+    cp_multipliers,
     base_stats,
     max_cp,
     level_bonus,
@@ -239,7 +228,7 @@ def test_rank_iv_spreads(
     )
 
     ranks_df = pvp_ranks_m.rank_iv_spreads(
-        base_stats, CP_MULTIPLIERS, max_cp, levels, min_iv=min_iv
+        base_stats, cp_multipliers, max_cp, levels, min_iv=min_iv
     )
 
     assert len(ranks_df) == expected_spreads_nb
@@ -255,9 +244,12 @@ def list_ranks(ranks_df):
     )
 
 
-def test_rank_iv_spreads_gives_the_columns_of_a_spread():
+def test_rank_iv_spreads_gives_the_columns_of_a_spread(cp_multipliers):
     ranks_df = pvp_ranks_m.rank_iv_spreads(
-        AZUMARILL_BASE_STATS, CP_MULTIPLIERS, 1500, pvp_ranks_m.find_reachable_levels(0)
+        AZUMARILL_BASE_STATS,
+        cp_multipliers,
+        1500,
+        pvp_ranks_m.find_reachable_levels(0),
     )
 
     assert ranks_df.iloc[0].to_dict() == {
@@ -275,9 +267,14 @@ def test_rank_iv_spreads_gives_the_columns_of_a_spread():
     }
 
 
-def test_rank_iv_spreads_orders_spreads_equal_in_stat_product_and_iv_sum_by_ivs():
+def test_rank_iv_spreads_orders_spreads_equal_in_stat_product_and_iv_sum_by_ivs(
+    cp_multipliers,
+):
     ranks_df = pvp_ranks_m.rank_iv_spreads(
-        AZUMARILL_BASE_STATS, CP_MULTIPLIERS, 1500, pvp_ranks_m.find_reachable_levels(0)
+        AZUMARILL_BASE_STATS,
+        cp_multipliers,
+        1500,
+        pvp_ranks_m.find_reachable_levels(0),
     )
 
     # Both have a stat product of 2328.431 thousand and an IV sum of 25.

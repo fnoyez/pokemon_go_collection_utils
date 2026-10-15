@@ -26,13 +26,19 @@ def test_load_rankable_pokemons_leaves_out_entries_without_stats(tmp_path):
 
 
 def make_entry(
-    entry_id, dex_number, display_order, base_stats, temporary_evolutions=()
+    entry_id,
+    dex_number,
+    display_order,
+    base_stats,
+    temporary_evolutions=(),
+    name=None,
+    form_ids=None,
 ):
     return catalog_m.CatalogEntry(
         entry_id=entry_id,
         dex_number=dex_number,
-        name=entry_id.capitalize(),
-        form_ids=(entry_id,),
+        name=name or entry_id.capitalize(),
+        form_ids=form_ids or (entry_id,),
         form_suffixes=(None,),
         region=regions_m.Region.KANTO,
         is_variant=False,
@@ -118,6 +124,66 @@ def test_load_rankable_pokemons_lists_temporary_evolutions_after_their_entry(
         pvp_rank_data_m.RankablePokemon(
             "KYOGRE", "PRIMAL", "Primal Kyogre", (353, 268, 205)
         ),
+    ]
+
+
+def test_load_evolution_tree_data_splits_names_into_species_and_form(tmp_path):
+    db_file_path = tmp_path / "collection.sqlite"
+    migrate_m.init_db(db_file_path)
+    with db_m.db_conn(db_file_path) as conn:
+        refresh_m.write_catalog(
+            conn,
+            [
+                make_entry(
+                    "ROCKRUFF",
+                    744,
+                    0,
+                    (117, 78, 128),
+                    form_ids=("ROCKRUFF_NORMAL", "ROCKRUFF"),
+                ),
+                make_entry(
+                    "LYCANROC",
+                    745,
+                    1,
+                    (231, 140, 181),
+                    form_ids=("LYCANROC", "LYCANROC_MIDDAY"),
+                ),
+                make_entry(
+                    "LYCANROC_MIDNIGHT",
+                    745,
+                    2,
+                    (218, 152, 198),
+                    name="Lycanroc (Midnight)",
+                ),
+                make_entry("MEW", 151, 3, (210, 210, 225)),
+            ],
+            {
+                "ROCKRUFF": None,
+                "LYCANROC": None,
+                "LYCANROC_MIDNIGHT": None,
+                "MEW": None,
+            },
+        )
+        conn.execute(
+            """
+            INSERT INTO pokemon_evolution (source_entry_id, target_entry_id)
+            VALUES ('ROCKRUFF', 'LYCANROC'), ('ROCKRUFF', 'LYCANROC_MIDNIGHT')
+            """
+        )
+
+    entries, evolution_edges = pvp_rank_data_m.load_evolution_tree_data(db_file_path)
+
+    assert [
+        (entry.entry_id, entry.species_name, entry.form_label) for entry in entries
+    ] == [
+        ("MEW", "Mew", None),
+        ("ROCKRUFF", "Rockruff", "Normal"),
+        ("LYCANROC", "Lycanroc", "Midday"),
+        ("LYCANROC_MIDNIGHT", "Lycanroc", "Midnight"),
+    ]
+    assert sorted(evolution_edges) == [
+        ("ROCKRUFF", "LYCANROC"),
+        ("ROCKRUFF", "LYCANROC_MIDNIGHT"),
     ]
 
 

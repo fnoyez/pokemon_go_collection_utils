@@ -464,8 +464,12 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
 
 
 def _build_form_label(form):
+    return build_form_label(form.form_id, form.species_id)
+
+
+def build_form_label(form_id, species_id):
     """Name a form from its suffix: `TAUROS_PALDEA_AQUA` reads `Paldean Aqua`."""
-    suffix = find_form_suffix(form.form_id, form.species_id)
+    suffix = find_form_suffix(form_id, species_id)
     if suffix in _FORM_SUFFIX_LABELS:
         return _FORM_SUFFIX_LABELS[suffix]
     suffix_tokens = suffix.split("_")

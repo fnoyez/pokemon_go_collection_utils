@@ -1,8 +1,15 @@
 """The data of the PvP ranks tab, as docs/pvp_ranks.md, *Pokémon*, describes it."""
 
 import dataclasses
+import json
+import re
 
+from pokemon_go_collection import catalog as catalog_m
 from pokemon_go_collection import db as db_m
+from pokemon_go_collection import rank_names as rank_names_m
+
+# How the catalog names an entry of a form: `Lycanroc (Midnight)`.
+_FORM_ENTRY_NAME_REGEX = re.compile(r"^(?P<species_name>.*) \((?P<form_label>.*)\)$")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -64,6 +71,70 @@ def load_rankable_pokemons(db_file_path):
             _,
         ) in rows
     ]
+
+
+def load_evolution_tree_data(db_file_path):
+    """Return the catalog entries having base stats, in catalog order, as
+    `rank_names.TreeEntry`, and the evolutions, as (source, target) pairs."""
+    with db_m.db_conn(db_file_path) as conn:
+        entry_rows = conn.execute(
+            """
+            SELECT
+              entry_id, dex_number, name, form_ids, is_variant, is_baby,
+              base_attack, base_defense, base_stamina
+            FROM pokemon_entry
+            WHERE base_attack IS NOT NULL
+            ORDER BY dex_number, display_order
+            """
+        ).fetchall()
+        evolution_edges = conn.execute(
+            """
+            SELECT source_entry_id, target_entry_id
+            FROM pokemon_evolution
+            """
+        ).fetchall()
+    entries = [
+        rank_names_m.TreeEntry(
+            entry_id,
+            dex_number,
+            name,
+            *_split_entry_name(entry_id, name, json.loads(form_ids_json)),
+            bool(is_variant),
+            bool(is_baby),
+            (base_attack, base_defense, base_stamina),
+        )
+        for (
+            entry_id,
+            dex_number,
+            name,
+            form_ids_json,
+            is_variant,
+            is_baby,
+            base_attack,
+            base_defense,
+            base_stamina,
+        ) in entry_rows
+    ]
+    return entries, [tuple(evolution_edge) for evolution_edge in evolution_edges]
+
+
+def _split_entry_name(entry_id, name, form_ids):
+    """Return the species name and the form label of an entry."""
+    match = _FORM_ENTRY_NAME_REGEX.match(name)
+    if match is not None:
+        return match["species_name"], match["form_label"]
+    # An entry named after its species alone is a base entry, whose identifier
+    # is the species identifier: its form label is that of its first form
+    # having one, such as LYCANROC_MIDDAY.
+    form_label = next(
+        (
+            catalog_m.build_form_label(form_id, entry_id)
+            for form_id in form_ids
+            if form_id != entry_id
+        ),
+        None,
+    )
+    return name, form_label
 
 
 def load_cp_multipliers(db_file_path):

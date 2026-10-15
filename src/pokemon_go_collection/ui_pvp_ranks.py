@@ -83,6 +83,7 @@ def _render_best_ranks(pokemons, cp_multipliers, settings):
             index=None,
             format_func=lambda pokemon: pokemon.name,
             placeholder="Type a name",
+            filter_mode="contains",
         )
     with league_column:
         league = st.selectbox(
@@ -140,6 +141,7 @@ def _render_iv_spread_ranks(pokemons, cp_multipliers, settings):
             pokemons,
             format_func=lambda pokemon: pokemon.name,
             placeholder="Type names",
+            filter_mode="contains",
         )
     with league_column:
         leagues = st.multiselect(

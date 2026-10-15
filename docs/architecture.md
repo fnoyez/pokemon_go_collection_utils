@@ -20,7 +20,7 @@
 - `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `overrides.py`, `icons.py`, `pogocoordinates.py`, `discord.py`; and `http.py`, the download helper they share.
 - `src/pokemon_go_collection/pvp_ranks.py` — the PvP rank computation of [pvp_ranks.md](pvp_ranks.md), pure functions over base stats and CP multipliers.
 - `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
-- `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog tables), `shundos.py` (reading and recording the collection), `hunt_list.py` (the shundo hunt list), `spawn_watch.py` (the spawn watch) and `pogocoordinates_login.py` (its login), `backups.py`.
+- `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog tables), `shundos.py` (reading and recording the collection), `hunt_list.py` (the shundo hunt list), `spawn_watch.py` (the spawn watch) and `pogocoordinates_login.py` (its login), `pvp_rank_data.py` (the base stats and CP multipliers the PvP ranks tab reads), `backups.py`.
 - `src/pokemon_go_collection/ui_shundos.py` — the Shundos tab.
 - `src/pokemon_go_collection/ui_pvp_ranks.py` — the PvP ranks tab.
 - `src/pokemon_go_collection/ui_spawn_watch.py` — the Spawn watch tab; the watch itself is `services/spawn_watch.py`, described in [spawn_watch.md](spawn_watch.md).

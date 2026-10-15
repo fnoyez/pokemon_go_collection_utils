@@ -6,6 +6,7 @@ import urllib.error
 
 from pokemon_go_collection import catalog as catalog_m
 from pokemon_go_collection import db as db_m
+from pokemon_go_collection import pvp_ranks as pvp_ranks_m
 from pokemon_go_collection.sources import game_master as game_master_m
 from pokemon_go_collection.sources import http as http_m
 from pokemon_go_collection.sources import icons as icons_m
@@ -99,6 +100,9 @@ def run_refresh(cfg, now):
         )
         with db_m.db_conn(cfg.db_file_path) as conn:
             write_catalog(conn, entries, icon_file_names)
+            write_cp_multipliers(
+                conn, pvp_ranks_m.build_cp_multipliers(game_master.cp_multipliers)
+            )
     except Exception as error:
         _record_refresh(
             cfg.db_file_path,
@@ -184,9 +188,10 @@ def write_catalog(conn, entries, icon_file_names):
         """
         INSERT INTO pokemon_entry (
           entry_id, dex_number, name, form_ids, region, is_variant, display_order,
-          pokemon_class, is_baby, is_released, shiny_release_date, icon_file_name
+          pokemon_class, is_baby, is_released, shiny_release_date, icon_file_name,
+          base_attack, base_defense, base_stamina
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (entry_id) DO UPDATE SET
           dex_number = excluded.dex_number,
           name = excluded.name,
@@ -198,7 +203,10 @@ def write_catalog(conn, entries, icon_file_names):
           is_baby = excluded.is_baby,
           is_released = excluded.is_released,
           shiny_release_date = excluded.shiny_release_date,
-          icon_file_name = excluded.icon_file_name
+          icon_file_name = excluded.icon_file_name,
+          base_attack = excluded.base_attack,
+          base_defense = excluded.base_defense,
+          base_stamina = excluded.base_stamina
         """,
         [
             (
@@ -218,6 +226,7 @@ def write_catalog(conn, entries, icon_file_names):
                     else None
                 ),
                 icon_file_names[entry.entry_id],
+                *(entry.base_stats or (None, None, None)),
             )
             for entry in entries
         ],
@@ -232,6 +241,21 @@ def write_catalog(conn, entries, icon_file_names):
             for entry in entries
             for target_entry_id in entry.evolution_target_entry_ids
         ],
+    )
+
+
+def write_cp_multipliers(conn, cp_multipliers):
+    conn.execute(
+        """
+        DELETE FROM cp_multiplier
+        """
+    )
+    conn.executemany(
+        """
+        INSERT INTO cp_multiplier (level, multiplier)
+        VALUES (?, ?)
+        """,
+        list(cp_multipliers.items()),
     )
 
 

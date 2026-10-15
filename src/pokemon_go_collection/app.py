@@ -6,6 +6,7 @@ import streamlit as st
 
 from pokemon_go_collection import config as config_m
 from pokemon_go_collection import migrate as migrate_m
+from pokemon_go_collection import ui_pvp_ranks as ui_pvp_ranks_m
 from pokemon_go_collection import ui_shundos as ui_shundos_m
 from pokemon_go_collection import ui_spawn_watch as ui_spawn_watch_m
 from pokemon_go_collection.services import backups as backups_m
@@ -42,11 +43,15 @@ def main():
         _render_sidebar(cfg)
 
     st.title("Pokémon GO Collection")
-    shundos_tab, spawn_watch_tab = st.tabs(["Shundos", "Spawn watch"])
+    shundos_tab, spawn_watch_tab, pvp_ranks_tab = st.tabs(
+        ["Shundos", "Spawn watch", "PvP ranks"]
+    )
     with shundos_tab:
         ui_shundos_m.render_shundos_page(cfg.db_file_path)
     with spawn_watch_tab:
         ui_spawn_watch_m.render_spawn_watch_page(cfg)
+    with pvp_ranks_tab:
+        ui_pvp_ranks_m.render_pvp_ranks_page(cfg.db_file_path)
 
 
 # Cached as a resource, the watch starts once per server process and runs as

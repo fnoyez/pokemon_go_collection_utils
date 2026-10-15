@@ -169,6 +169,7 @@ GAME_MASTER = game_master_m.GameMaster(
         make_form("KLEAVOR", "KLEAVOR", 900, (253, 159, 172), ("BUG", "ROCK")),
     ),
     costume_form_ids=frozenset({"PIKACHU_FALL_2019"}),
+    cp_multipliers=(),
     timestamp=datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc),
 )
 
@@ -349,6 +350,7 @@ def test_build_catalog_splits_a_species_whose_base_form_an_override_chooses():
             ),
         ),
         costume_form_ids=frozenset(),
+        cp_multipliers=(),
         timestamp=datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc),
     )
     # The override lines order the species' entries: Autumn before Summer.
@@ -412,6 +414,7 @@ def test_build_catalog_names_a_form_by_its_symbol():
             for form_id in ("UNOWN", "UNOWN_A", "UNOWN_EXCLAMATION_POINT")
         ),
         costume_form_ids=frozenset(),
+        cp_multipliers=(),
         timestamp=datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc),
     )
     form_overrides = {

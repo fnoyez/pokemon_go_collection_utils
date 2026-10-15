@@ -47,6 +47,8 @@ class GameMaster:
     # settings first and its forms in the order the game master lists them.
     forms: tuple[PokemonForm, ...]
     costume_form_ids: frozenset[str]
+    # The CP multiplier of each whole level, level 1 first.
+    cp_multipliers: tuple[float, ...]
     # When the game master was published.
     timestamp: datetime.datetime
 
@@ -79,7 +81,10 @@ def load_game_master(repository_folder_path):
 def parse_game_master(templates, timestamp):
     form_orders = {}
     costume_form_ids = set()
+    cp_multipliers = None
     for template in templates:
+        if "playerLevel" in template["data"]:
+            cp_multipliers = tuple(template["data"]["playerLevel"]["cpMultiplier"])
         form_settings = template["data"].get("formSettings")
         if form_settings is None:
             continue
@@ -108,6 +113,7 @@ def parse_game_master(templates, timestamp):
     return GameMaster(
         forms=tuple(sorted(forms, key=sort_key)),
         costume_form_ids=frozenset(costume_form_ids),
+        cp_multipliers=cp_multipliers,
         timestamp=timestamp,
     )
 

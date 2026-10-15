@@ -47,6 +47,9 @@ class CatalogEntry:
     display_order: int
     # The class of its representative form.
     pokemon_class: game_master_m.PokemonClass | None
+    # The (attack, defense, stamina) base stats of its representative form;
+    # None for a species absent from the game master.
+    base_stats: tuple[int, int, int] | None
     is_baby: bool
     # The entries it evolves into, in game master order.
     evolution_target_entry_ids: tuple[str, ...]
@@ -103,6 +106,7 @@ def build_catalog(
             is_variant,
             display_order,
             draft.pokemon_class,
+            draft.base_stats,
             draft.dex_number in baby_dex_numbers,
             tuple(evolution_edges.get(draft.entry_id, [])),
             is_released=(
@@ -132,6 +136,7 @@ class EntryDraft:
     # candidate: a regional form, or a form an override assigns to a region.
     variant_region: regions_m.Region | None
     pokemon_class: game_master_m.PokemonClass | None
+    base_stats: tuple[int, int, int] | None
 
 
 def build_entry_drafts(national_dex_species, game_master, form_overrides):
@@ -389,6 +394,7 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
                 form_order=-1,
                 variant_region=None,
                 pokemon_class=None,
+                base_stats=None,
             )
         ]
 
@@ -439,6 +445,7 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
                 form_order,
                 variant_region,
                 representative_form.pokemon_class,
+                representative_form.stats,
             )
         )
     return drafts

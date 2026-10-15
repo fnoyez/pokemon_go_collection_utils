@@ -9,6 +9,8 @@ description = "Local Pokémon GO collection tracker with Streamlit and SQLite"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "numpy>=2.4.6,<3",
+    "pandas>=3.0.6,<4",
     "playwright>=1.55,<2",
     "streamlit>=1.57.0,<2",
     "timezonefinder>=8,<9",

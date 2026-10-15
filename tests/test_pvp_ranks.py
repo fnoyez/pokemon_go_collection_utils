@@ -1,3 +1,6 @@
+from contextlib import nullcontext as does_not_raise
+
+import pandas as pd
 import pytest
 
 import pokemon_go_collection.pvp_ranks as pvp_ranks_m
@@ -224,3 +227,64 @@ def test_rank_iv_spreads(
         list(zip(first_ranks_df["IVs"], first_ranks_df["Level"], first_ranks_df["CP"]))
         == expected_first_ranks
     )
+
+
+def get_parse_iv_spreads_test_data():
+    test_cases = [
+        {
+            "id": "one-per-line",
+            "iv_spreads_text": "10 13 14\n11 11 15",
+            "expected_iv_spreads": [(10, 13, 14), (11, 11, 15)],
+            "expectation": does_not_raise(),
+        },
+        {
+            "id": "blank-lines-and-spaces",
+            "iv_spreads_text": "\n 0  14 13 \n\n\n15 15 15\n",
+            "expected_iv_spreads": [(0, 14, 13), (15, 15, 15)],
+            "expectation": does_not_raise(),
+        },
+        {
+            "id": "two-ivs-refused",
+            "iv_spreads_text": "10 13",
+            "expected_iv_spreads": None,
+            "expectation": pytest.raises(ValueError),
+        },
+        {
+            "id": "slashes-refused",
+            "iv_spreads_text": "10/13/14",
+            "expected_iv_spreads": None,
+            "expectation": pytest.raises(ValueError),
+        },
+    ]
+
+    return [
+        pytest.param(
+            test_case["iv_spreads_text"],
+            test_case["expected_iv_spreads"],
+            test_case["expectation"],
+            id=test_case["id"],
+        )
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize(
+    "iv_spreads_text,expected_iv_spreads,expectation", get_parse_iv_spreads_test_data()
+)
+def test_parse_iv_spreads(iv_spreads_text, expected_iv_spreads, expectation):
+    with expectation:
+        assert pvp_ranks_m.parse_iv_spreads(iv_spreads_text) == expected_iv_spreads
+
+
+def test_select_iv_spread_ranks_keeps_the_spreads_given_by_rank():
+    ranks_df = pd.DataFrame(
+        {"IVs": ["0/15/15", "0/14/11", "0/15/12", "1/15/11"]},
+        index=pd.Index([1, 2, 3, 4], name="Rank"),
+    )
+
+    iv_spread_ranks_df = pvp_ranks_m.select_iv_spread_ranks(
+        ranks_df, [(1, 15, 11), (0, 15, 15), (15, 15, 15)]
+    )
+
+    assert list(iv_spread_ranks_df.index) == [1, 4]
+    assert list(iv_spread_ranks_df["IVs"]) == ["0/15/15", "1/15/11"]

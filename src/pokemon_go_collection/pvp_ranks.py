@@ -3,6 +3,7 @@
 import enum
 import itertools
 import math
+import re
 
 import numpy as np
 import pandas as pd
@@ -169,3 +170,22 @@ def rank_iv_spreads(
             ]
         ]
     )
+
+
+def parse_iv_spreads(iv_spreads_text):
+    """Return the IV spreads typed one per line, each as `attack defense stamina`."""
+    iv_spreads = []
+    for line in re.split(r"\n+", iv_spreads_text.strip()):
+        ivs = line.split()
+        if len(ivs) != 3 or not all(iv.isdigit() for iv in ivs):
+            raise ValueError(f"Not an IV spread: '{line}'")
+        iv_spreads.append(tuple(int(iv) for iv in ivs))
+    return iv_spreads
+
+
+def select_iv_spread_ranks(ranks_df, iv_spreads):
+    """Return the rows of `ranks_df`, from `rank_iv_spreads`, of the IV spreads given."""
+    iv_spread_texts = [
+        "/".join(str(iv) for iv in iv_spread) for iv_spread in iv_spreads
+    ]
+    return ranks_df[ranks_df["IVs"].isin(iv_spread_texts)]

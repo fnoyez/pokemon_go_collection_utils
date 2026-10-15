@@ -1,4 +1,3 @@
-import pandas as pd
 import streamlit as st
 
 from pokemon_go_collection import pvp_ranks as pvp_ranks_m
@@ -179,39 +178,43 @@ def _render_iv_spread_ranks(pokemons, cp_multipliers, settings):
                 st.error(str(error))
             else:
                 with st.spinner("Ranking the IV spreads..."):
-                    iv_spread_ranks_df = _rank_given_iv_spreads(
-                        selected_pokemons, leagues, iv_spreads, cp_multipliers, settings
+                    iv_spread_ranks = _rank_given_iv_spreads(
+                        _sort_like(pokemons, selected_pokemons),
+                        _sort_like(list(_LEAGUE_LABELS), leagues),
+                        iv_spreads,
+                        cp_multipliers,
+                        settings,
                     )
                 st.session_state[_IV_SPREAD_RANKS_KEY] = {
                     "request": request,
-                    "iv_spread_ranks_df": iv_spread_ranks_df,
+                    "iv_spread_ranks": iv_spread_ranks,
                 }
     result = st.session_state.get(_IV_SPREAD_RANKS_KEY)
     if result is not None and result["request"] == request:
-        st.dataframe(result["iv_spread_ranks_df"], hide_index=True)
+        for title, iv_spread_ranks_df in result["iv_spread_ranks"]:
+            st.markdown(f"**{title}**")
+            if iv_spread_ranks_df.empty:
+                st.caption("None of the IV spreads is within the IV range.")
+            else:
+                st.dataframe(iv_spread_ranks_df)
 
 
-def _rank_given_iv_spreads(
-    selected_pokemons, leagues, iv_spreads, cp_multipliers, settings
-):
-    iv_spread_ranks_dfs = []
-    for pokemon in selected_pokemons:
+def _rank_given_iv_spreads(pokemons, leagues, iv_spreads, cp_multipliers, settings):
+    """Return the ranks of `iv_spreads`, as (title, ranks) per Pokémon and league."""
+    iv_spread_ranks = []
+    for pokemon in pokemons:
         for league in leagues:
             ranks_df = _rank_iv_spreads(
                 pokemon.base_stats, cp_multipliers, league.value, settings
             )
-            iv_spread_ranks_dfs.append(
-                pvp_ranks_m.select_iv_spread_ranks(ranks_df, iv_spreads)
-                .reset_index()
-                .assign(Pokémon=pokemon.name, League=_LEAGUE_LABELS[league])
+            iv_spread_ranks.append(
+                (
+                    f"{pokemon.name} · {_LEAGUE_LABELS[league]}",
+                    pvp_ranks_m.select_iv_spread_ranks(ranks_df, iv_spreads),
+                )
             )
-    iv_spread_ranks_df = pd.concat(iv_spread_ranks_dfs).sort_values(
-        "Rank", kind="stable"
-    )
-    return iv_spread_ranks_df[
-        [
-            "Pokémon",
-            "League",
-            *iv_spread_ranks_df.columns.drop(["Pokémon", "League"]),
-        ]
-    ]
+    return iv_spread_ranks
+
+
+def _sort_like(ordered_items, items):
+    return sorted(items, key=ordered_items.index)

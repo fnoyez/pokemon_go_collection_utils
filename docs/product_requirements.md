@@ -37,7 +37,7 @@ The design is in [spawn_watch.md](spawn_watch.md).
 ### PvP ranks
 
 - For a Pokémon and a PvP league, the application lists the IV spreads by rank, the best first, so the one to hunt for is known, including for a Pokémon not released yet.
-- For several Pokémon and leagues, it gives the rank of IV spreads typed in, such as those of the specimens available, ordered by rank.
+- For several Pokémon and leagues, it gives the rank of IV spreads typed in, such as those of the specimens available, in one table per Pokémon and league.
 - The ranks follow the stat product under the league's CP cap, and take into account the minimum IV of how the specimen is obtained and the level bonuses beyond level 50.
 
 The concepts and the design are in [pvp_ranks.md](pvp_ranks.md).

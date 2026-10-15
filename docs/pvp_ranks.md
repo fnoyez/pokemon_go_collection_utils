@@ -40,7 +40,7 @@ The level of a spread is chosen among the levels reachable with the level bonus:
 
 ## Pokémon
 
-The Pokémon offered are the catalog's entries (see [catalog.md](catalog.md), *Catalog entries*) whose base form has stats in the game master: a Pokémon in the game master but not released yet is offered, so a spread can be chosen before its release. An entry stands for its representative form's stats. A refresh stores, with each entry, those base stats, and the CP multipliers of every level.
+The Pokémon offered are the catalog's entries (see [catalog.md](catalog.md), *Catalog entries*) whose base form has stats in the game master: a Pokémon in the game master but not released yet is offered, so a spread can be chosen before its release. They are listed by National Pokédex number, the forms of a species in catalog order, its base form first. An entry stands for its representative form's stats. A refresh stores, with each entry, those base stats, and the CP multipliers of every level.
 
 ## The tab
 
@@ -61,4 +61,4 @@ One Pokémon, chosen from a list searched by name, and one league, both required
 
 ### Ranks of IV spreads
 
-Several Pokémon, chosen from a list searched by name, several leagues, and IV spreads typed as text, one per line, its three IVs separated by spaces (`10 13 14`). The section lists, for every Pokémon and league, the rank of each spread typed, with the same columns as *Best ranks*, all in one table ordered by rank. A spread outside the IV range has no rank, and is left out.
+Several Pokémon, chosen from a list searched by name, several leagues, and IV spreads typed as text, one per line, its three IVs separated by spaces (`10 13 14`). The section shows one table per Pokémon and league, giving the rank of each spread typed, with the same columns as *Best ranks*, the best rank first. The tables are ordered by Pokémon, then by league, from Little Cup to Ultra League. A spread outside the IV range has no rank, and is left out.

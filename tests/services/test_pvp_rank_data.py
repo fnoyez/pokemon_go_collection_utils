@@ -13,8 +13,8 @@ def test_load_rankable_pokemons_leaves_out_entries_without_stats(tmp_path):
         refresh_m.write_catalog(
             conn,
             [
-                make_entry("AZUMARILL", 0, (112, 152, 225)),
-                make_entry("UNRELEASED", 1, None),
+                make_entry("AZUMARILL", 184, 0, (112, 152, 225)),
+                make_entry("UNRELEASED", 1100, 1, None),
             ],
             {"AZUMARILL": None, "UNRELEASED": None},
         )
@@ -24,10 +24,10 @@ def test_load_rankable_pokemons_leaves_out_entries_without_stats(tmp_path):
     ]
 
 
-def make_entry(entry_id, display_order, base_stats):
+def make_entry(entry_id, dex_number, display_order, base_stats):
     return catalog_m.CatalogEntry(
         entry_id=entry_id,
-        dex_number=display_order + 1,
+        dex_number=dex_number,
         name=entry_id.capitalize(),
         form_ids=(entry_id,),
         form_suffixes=(None,),
@@ -41,6 +41,29 @@ def make_entry(entry_id, display_order, base_stats):
         is_released=True,
         shiny_release_date=None,
     )
+
+
+def test_load_rankable_pokemons_orders_by_dex_number_then_catalog_order(tmp_path):
+    db_file_path = tmp_path / "collection.sqlite"
+    migrate_m.init_db(db_file_path)
+    with db_m.db_conn(db_file_path) as conn:
+        refresh_m.write_catalog(
+            conn,
+            [
+                make_entry("RAICHU", 26, 25, (201, 154, 155)),
+                make_entry("MEOWTH", 52, 51, (92, 78, 120)),
+                make_entry("RAICHU_ALOLA", 26, 919, (201, 156, 155)),
+            ],
+            {"RAICHU": None, "MEOWTH": None, "RAICHU_ALOLA": None},
+        )
+
+    pokemons = pvp_rank_data_m.load_rankable_pokemons(db_file_path)
+
+    assert [pokemon.entry_id for pokemon in pokemons] == [
+        "RAICHU",
+        "RAICHU_ALOLA",
+        "MEOWTH",
+    ]
 
 
 def test_load_cp_multipliers_reads_what_a_refresh_writes(tmp_path):

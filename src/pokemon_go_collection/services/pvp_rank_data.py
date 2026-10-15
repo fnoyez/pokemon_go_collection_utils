@@ -14,14 +14,18 @@ class RankablePokemon:
 
 
 def load_rankable_pokemons(db_file_path):
-    """Return the catalog entries having base stats, in catalog order."""
+    """Return the catalog entries having base stats, by National Pokédex number.
+
+    The entries of one species follow the catalog order: the base form, then its
+    other forms.
+    """
     with db_m.db_conn(db_file_path) as conn:
         rows = conn.execute(
             """
             SELECT entry_id, name, base_attack, base_defense, base_stamina
             FROM pokemon_entry
             WHERE base_attack IS NOT NULL
-            ORDER BY display_order
+            ORDER BY dex_number, display_order
             """
         ).fetchall()
     return [

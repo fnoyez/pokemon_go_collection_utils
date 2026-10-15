@@ -127,6 +127,7 @@ def get_rank_iv_spreads_test_data():
                 ("0/14/11", 46.5, 1500),
                 ("0/15/12", 46.0, 1499),
             ],
+            "expected_last_ranks": [("15/0/0", 41.5, 1494), ("15/0/2", 41.0, 1492)],
         },
         {
             "id": "great-league-from-raids",
@@ -140,6 +141,7 @@ def get_rank_iv_spreads_test_data():
                 ("10/15/14", 39.0, 1500),
                 ("10/14/15", 39.0, 1499),
             ],
+            "expected_last_ranks": [("15/10/10", 37.5, 1492), ("15/12/10", 37.0, 1490)],
         },
         {
             "id": "ultra-league",
@@ -154,6 +156,7 @@ def get_rank_iv_spreads_test_data():
                 ("0/14/14", 26.0, 2497),
                 ("1/12/15", 26.0, 2500),
             ],
+            "expected_last_ranks": [("15/0/1", 25.5, 2460), ("15/0/0", 25.5, 2456)],
         },
         {
             "id": "best-buddy",
@@ -167,6 +170,7 @@ def get_rank_iv_spreads_test_data():
                 ("10/15/15", 50.5, 1500),
                 ("9/15/15", 51.0, 1497),
             ],
+            "expected_last_ranks": [("0/0/1", 51.0, 1267), ("0/0/0", 51.0, 1263)],
         },
         {
             "id": "best-buddy-whole-levels-above-50",
@@ -180,6 +184,7 @@ def get_rank_iv_spreads_test_data():
                 ("9/15/15", 51.0, 1497),
                 ("10/15/13", 51.0, 1500),
             ],
+            "expected_last_ranks": [("0/0/1", 51.0, 1267), ("0/0/0", 51.0, 1263)],
         },
     ]
 
@@ -192,6 +197,7 @@ def get_rank_iv_spreads_test_data():
             test_case["min_iv"],
             test_case["expected_spreads_nb"],
             test_case["expected_first_ranks"],
+            test_case["expected_last_ranks"],
             id=test_case["id"],
         )
         for test_case in test_cases
@@ -200,7 +206,7 @@ def get_rank_iv_spreads_test_data():
 
 @pytest.mark.parametrize(
     "base_stats,max_cp,level_bonus,includes_half_levels_above_50,min_iv,"
-    "expected_spreads_nb,expected_first_ranks",
+    "expected_spreads_nb,expected_first_ranks,expected_last_ranks",
     get_rank_iv_spreads_test_data(),
 )
 def test_rank_iv_spreads(
@@ -211,6 +217,7 @@ def test_rank_iv_spreads(
     min_iv,
     expected_spreads_nb,
     expected_first_ranks,
+    expected_last_ranks,
 ):
     levels = pvp_ranks_m.find_reachable_levels(
         level_bonus, includes_half_levels_above_50=includes_half_levels_above_50
@@ -222,11 +229,39 @@ def test_rank_iv_spreads(
 
     assert len(ranks_df) == expected_spreads_nb
     assert list(ranks_df.index[:3]) == [1, 2, 3]
-    first_ranks_df = ranks_df.head(len(expected_first_ranks))
-    assert (
-        list(zip(first_ranks_df["IVs"], first_ranks_df["Level"], first_ranks_df["CP"]))
-        == expected_first_ranks
+    assert list_ranks(ranks_df.head(len(expected_first_ranks))) == expected_first_ranks
+    assert list_ranks(ranks_df.tail(len(expected_last_ranks))) == expected_last_ranks
+
+
+def list_ranks(ranks_df):
+    return list(zip(ranks_df["IVs"], ranks_df["Level"], ranks_df["CP"], strict=True))
+
+
+def test_rank_iv_spreads_gives_the_columns_of_a_spread():
+    ranks_df = pvp_ranks_m.rank_iv_spreads(
+        AZUMARILL_BASE_STATS, CP_MULTIPLIERS, 1500, pvp_ranks_m.find_reachable_levels(0)
     )
+
+    assert ranks_df.loc[1].to_dict() == {
+        "Level": 45.5,
+        "CP": 1499,
+        "IVs": "0/15/15",
+        "Att": 91.5936,
+        "Def": 136.5726,
+        "HP": 196,
+        "Stat Product": 2451.799,
+        "% Max Stat": 100.0,
+        "% Max IV Sum": 67,
+    }
+
+
+def test_rank_iv_spreads_orders_spreads_equal_in_stat_product_and_iv_sum_by_ivs():
+    ranks_df = pvp_ranks_m.rank_iv_spreads(
+        AZUMARILL_BASE_STATS, CP_MULTIPLIERS, 1500, pvp_ranks_m.find_reachable_levels(0)
+    )
+
+    # Both have a stat product of 2328.431 thousand and an IV sum of 25.
+    assert list(ranks_df.loc[[1731, 1732], "IVs"]) == ["7/13/5", "8/9/8"]
 
 
 def get_parse_iv_spreads_test_data():

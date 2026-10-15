@@ -123,11 +123,14 @@ def get_rank_iv_spreads_test_data():
             "min_iv": 0,
             "expected_spreads_nb": 4096,
             "expected_first_ranks": [
-                ("0/15/15", 45.5, 1499),
-                ("0/14/11", 46.5, 1500),
-                ("0/15/12", 46.0, 1499),
+                (1, 1, "0/15/15", 45.5, 1499),
+                (2, 2, "0/14/11", 46.5, 1500),
+                (3, 3, "0/15/12", 46.0, 1499),
             ],
-            "expected_last_ranks": [("15/0/0", 41.5, 1494), ("15/0/2", 41.0, 1492)],
+            "expected_last_ranks": [
+                (4095, 4095, "15/0/0", 41.5, 1494),
+                (4096, 4096, "15/0/2", 41.0, 1492),
+            ],
         },
         {
             "id": "great-league-from-raids",
@@ -138,10 +141,13 @@ def get_rank_iv_spreads_test_data():
             "min_iv": 10,
             "expected_spreads_nb": 216,
             "expected_first_ranks": [
-                ("10/15/14", 39.0, 1500),
-                ("10/14/15", 39.0, 1499),
+                (1289, 1, "10/15/14", 39.0, 1500),
+                (1330, 2, "10/14/15", 39.0, 1499),
             ],
-            "expected_last_ranks": [("15/10/10", 37.5, 1492), ("15/12/10", 37.0, 1490)],
+            "expected_last_ranks": [
+                (3618, 215, "15/10/10", 37.5, 1492),
+                (3647, 216, "15/12/10", 37.0, 1490),
+            ],
         },
         {
             "id": "ultra-league",
@@ -152,11 +158,14 @@ def get_rank_iv_spreads_test_data():
             "min_iv": 0,
             "expected_spreads_nb": 4096,
             "expected_first_ranks": [
-                ("0/13/15", 26.0, 2495),
-                ("0/14/14", 26.0, 2497),
-                ("1/12/15", 26.0, 2500),
+                (1, 1, "0/13/15", 26.0, 2495),
+                (2, 2, "0/14/14", 26.0, 2497),
+                (3, 3, "1/12/15", 26.0, 2500),
             ],
-            "expected_last_ranks": [("15/0/1", 25.5, 2460), ("15/0/0", 25.5, 2456)],
+            "expected_last_ranks": [
+                (4095, 4095, "15/0/1", 25.5, 2460),
+                (4096, 4096, "15/0/0", 25.5, 2456),
+            ],
         },
         {
             "id": "best-buddy",
@@ -167,10 +176,13 @@ def get_rank_iv_spreads_test_data():
             "min_iv": 0,
             "expected_spreads_nb": 4096,
             "expected_first_ranks": [
-                ("10/15/15", 50.5, 1500),
-                ("9/15/15", 51.0, 1497),
+                (1, 1, "10/15/15", 50.5, 1500),
+                (2, 2, "9/15/15", 51.0, 1497),
             ],
-            "expected_last_ranks": [("0/0/1", 51.0, 1267), ("0/0/0", 51.0, 1263)],
+            "expected_last_ranks": [
+                (4095, 4095, "0/0/1", 51.0, 1267),
+                (4096, 4096, "0/0/0", 51.0, 1263),
+            ],
         },
         {
             "id": "best-buddy-whole-levels-above-50",
@@ -181,10 +193,13 @@ def get_rank_iv_spreads_test_data():
             "min_iv": 0,
             "expected_spreads_nb": 4096,
             "expected_first_ranks": [
-                ("9/15/15", 51.0, 1497),
-                ("10/15/13", 51.0, 1500),
+                (1, 1, "9/15/15", 51.0, 1497),
+                (2, 2, "10/15/13", 51.0, 1500),
             ],
-            "expected_last_ranks": [("0/0/1", 51.0, 1267), ("0/0/0", 51.0, 1263)],
+            "expected_last_ranks": [
+                (4095, 4095, "0/0/1", 51.0, 1267),
+                (4096, 4096, "0/0/0", 51.0, 1263),
+            ],
         },
     ]
 
@@ -228,13 +243,16 @@ def test_rank_iv_spreads(
     )
 
     assert len(ranks_df) == expected_spreads_nb
-    assert list(ranks_df.index[:3]) == [1, 2, 3]
     assert list_ranks(ranks_df.head(len(expected_first_ranks))) == expected_first_ranks
     assert list_ranks(ranks_df.tail(len(expected_last_ranks))) == expected_last_ranks
 
 
 def list_ranks(ranks_df):
-    return list(zip(ranks_df["IVs"], ranks_df["Level"], ranks_df["CP"], strict=True))
+    return list(
+        ranks_df[
+            ["Rank (absolute)", "Rank (relative)", "IVs", "Level", "CP"]
+        ].itertuples(index=False, name=None)
+    )
 
 
 def test_rank_iv_spreads_gives_the_columns_of_a_spread():
@@ -242,7 +260,9 @@ def test_rank_iv_spreads_gives_the_columns_of_a_spread():
         AZUMARILL_BASE_STATS, CP_MULTIPLIERS, 1500, pvp_ranks_m.find_reachable_levels(0)
     )
 
-    assert ranks_df.loc[1].to_dict() == {
+    assert ranks_df.iloc[0].to_dict() == {
+        "Rank (absolute)": 1,
+        "Rank (relative)": 1,
         "Level": 45.5,
         "CP": 1499,
         "IVs": "0/15/15",
@@ -261,7 +281,7 @@ def test_rank_iv_spreads_orders_spreads_equal_in_stat_product_and_iv_sum_by_ivs(
     )
 
     # Both have a stat product of 2328.431 thousand and an IV sum of 25.
-    assert list(ranks_df.loc[[1731, 1732], "IVs"]) == ["7/13/5", "8/9/8"]
+    assert list(ranks_df["IVs"].iloc[1730:1732]) == ["7/13/5", "8/9/8"]
 
 
 def get_parse_iv_spreads_test_data():
@@ -313,13 +333,15 @@ def test_parse_iv_spreads(iv_spreads_text, expected_iv_spreads, expectation):
 
 def test_select_iv_spread_ranks_keeps_the_spreads_given_by_rank():
     ranks_df = pd.DataFrame(
-        {"IVs": ["0/15/15", "0/14/11", "0/15/12", "1/15/11"]},
-        index=pd.Index([1, 2, 3, 4], name="Rank"),
+        {
+            "Rank (relative)": [1, 2, 3, 4],
+            "IVs": ["0/15/15", "0/14/11", "0/15/12", "1/15/11"],
+        }
     )
 
     iv_spread_ranks_df = pvp_ranks_m.select_iv_spread_ranks(
         ranks_df, [(1, 15, 11), (0, 15, 15), (15, 15, 15)]
     )
 
-    assert list(iv_spread_ranks_df.index) == [1, 4]
+    assert list(iv_spread_ranks_df["Rank (relative)"]) == [1, 4]
     assert list(iv_spread_ranks_df["IVs"]) == ["0/15/15", "1/15/11"]

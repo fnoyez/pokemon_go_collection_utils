@@ -54,10 +54,12 @@ def rank_iv_spreads(
     """Return the IV spreads of the IV range, each at its best level under `max_cp`, by rank.
 
     `cp_multipliers` maps each level to its CP multiplier, and `levels` are the
-    levels a specimen can be at.
+    levels a specimen can be at. Each spread has its rank among the spreads of
+    IV floor 0, its absolute rank, and among those of the IV range, its relative
+    rank.
     """
     base_attack, base_defense, base_stamina = base_stats
-    ivs = np.arange(min_iv, max_iv + 1)
+    ivs = np.arange(0, max_iv + 1)
     # One row per IV spread, by attack IV, then defense IV, then stamina IV, and
     # one column per level.
     att_ivs, def_ivs, sta_ivs = (
@@ -95,10 +97,18 @@ def rank_iv_spreads(
     spread_indexes = np.lexsort((-iv_sums, -best_stat_products))
     # A spread above the cap at every level has no rank.
     spread_indexes = spread_indexes[is_under_cap.any(axis=1)[spread_indexes]]
+    absolute_ranks = np.arange(1, len(spread_indexes) + 1)
+    is_in_iv_range = (
+        np.minimum(np.minimum(att_ivs, def_ivs), sta_ivs) >= min_iv
+    ).ravel()[spread_indexes]
+    spread_indexes = spread_indexes[is_in_iv_range]
+    absolute_ranks = absolute_ranks[is_in_iv_range]
     level_indexes = best_level_indexes[spread_indexes]
     spread_stat_products = stat_products[spread_indexes, level_indexes]
     return pd.DataFrame(
         {
+            "Rank (absolute)": absolute_ranks,
+            "Rank (relative)": np.arange(1, len(spread_indexes) + 1),
             "Level": reachable_levels[level_indexes],
             "CP": cps[spread_indexes, level_indexes],
             "IVs": [
@@ -118,8 +128,7 @@ def rank_iv_spreads(
                 100 * spread_stat_products / spread_stat_products[0], 2
             ),
             "% Max IV Sum": np.round(100 * iv_sums[spread_indexes] / 45).astype(int),
-        },
-        index=pd.Index(np.arange(1, len(spread_indexes) + 1), name="Rank"),
+        }
     )
 
 

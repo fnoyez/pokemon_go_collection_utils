@@ -113,7 +113,7 @@ def _render_best_ranks(pokemons, cp_multipliers, settings):
             }
     result = st.session_state.get(_BEST_RANKS_KEY)
     if result is not None and result["request"] == request:
-        st.dataframe(result["ranks_df"], height=600)
+        st.dataframe(result["ranks_df"], height=600, hide_index=True)
 
 
 def _find_missing_inputs(inputs_by_description):
@@ -196,7 +196,7 @@ def _render_iv_spread_ranks(pokemons, cp_multipliers, settings):
             if iv_spread_ranks_df.empty:
                 st.caption("None of the IV spreads is within the IV range.")
             else:
-                st.dataframe(iv_spread_ranks_df)
+                st.dataframe(iv_spread_ranks_df, hide_index=True)
 
 
 def _rank_given_iv_spreads(pokemons, leagues, iv_spreads, cp_multipliers, settings):

@@ -22,6 +22,10 @@ _LEVEL_BONUS_LABELS = {
     2: "+2 (Mega Evolution 'Super Max Level')",
     3: "+3 (Best buddy + Mega Evolution 'Super Max Level')",
 }
+# The session state keys holding each section's last ranking, with the inputs
+# it was made from.
+_BEST_RANKS_KEY = "pvp_best_ranks"
+_IV_SPREAD_RANKS_KEY = "pvp_iv_spread_ranks"
 
 
 def render_pvp_ranks_page(db_file_path):
@@ -92,13 +96,33 @@ def _render_best_ranks(pokemons, cp_multipliers, settings):
             format_func=_LEAGUE_LABELS.get,
             placeholder="Choose a league",
         )
-    if pokemon is None or league is None:
-        return
-    with st.spinner("Ranking the IV spreads..."):
-        ranks_df = _rank_iv_spreads(
-            pokemon.base_stats, cp_multipliers, league.value, settings
+    request = {"pokemon": pokemon, "league": league, "settings": settings}
+    if st.button("Rank", key="best_ranks_button"):
+        missing_inputs = _find_missing_inputs(
+            {"a Pokémon": pokemon, "a league": league}
         )
-    st.dataframe(ranks_df, height=600)
+        if missing_inputs:
+            st.error(f"Missing: {', '.join(missing_inputs)}.")
+        else:
+            with st.spinner("Ranking the IV spreads..."):
+                ranks_df = _rank_iv_spreads(
+                    pokemon.base_stats, cp_multipliers, league.value, settings
+                )
+            st.session_state[_BEST_RANKS_KEY] = {
+                "request": request,
+                "ranks_df": ranks_df,
+            }
+    result = st.session_state.get(_BEST_RANKS_KEY)
+    if result is not None and result["request"] == request:
+        st.dataframe(result["ranks_df"], height=600)
+
+
+def _find_missing_inputs(inputs_by_description):
+    return [
+        description
+        for description, input_value in inputs_by_description.items()
+        if not input_value
+    ]
 
 
 @st.cache_data(max_entries=32)
@@ -132,36 +156,62 @@ def _render_iv_spread_ranks(pokemons, cp_multipliers, settings):
     iv_spreads_text = st.text_area(
         "IV spreads, one per line, as attack defense stamina", placeholder="10 13 14"
     )
-    if not selected_pokemons or not leagues or not iv_spreads_text.strip():
-        return
-    try:
-        iv_spreads = pvp_ranks_m.parse_iv_spreads(iv_spreads_text)
-    except ValueError as error:
-        st.error(str(error))
-        return
+    request = {
+        "pokemons": selected_pokemons,
+        "leagues": leagues,
+        "iv_spreads_text": iv_spreads_text,
+        "settings": settings,
+    }
+    if st.button("Rank", key="iv_spread_ranks_button"):
+        missing_inputs = _find_missing_inputs(
+            {
+                "at least one Pokémon": selected_pokemons,
+                "at least one league": leagues,
+                "at least one IV spread": iv_spreads_text.strip(),
+            }
+        )
+        if missing_inputs:
+            st.error(f"Missing: {', '.join(missing_inputs)}.")
+        else:
+            try:
+                iv_spreads = pvp_ranks_m.parse_iv_spreads(iv_spreads_text)
+            except ValueError as error:
+                st.error(str(error))
+            else:
+                with st.spinner("Ranking the IV spreads..."):
+                    iv_spread_ranks_df = _rank_given_iv_spreads(
+                        selected_pokemons, leagues, iv_spreads, cp_multipliers, settings
+                    )
+                st.session_state[_IV_SPREAD_RANKS_KEY] = {
+                    "request": request,
+                    "iv_spread_ranks_df": iv_spread_ranks_df,
+                }
+    result = st.session_state.get(_IV_SPREAD_RANKS_KEY)
+    if result is not None and result["request"] == request:
+        st.dataframe(result["iv_spread_ranks_df"], hide_index=True)
 
+
+def _rank_given_iv_spreads(
+    selected_pokemons, leagues, iv_spreads, cp_multipliers, settings
+):
     iv_spread_ranks_dfs = []
-    with st.spinner("Ranking the IV spreads..."):
-        for pokemon in selected_pokemons:
-            for league in leagues:
-                ranks_df = _rank_iv_spreads(
-                    pokemon.base_stats, cp_multipliers, league.value, settings
-                )
-                iv_spread_ranks_dfs.append(
-                    pvp_ranks_m.select_iv_spread_ranks(ranks_df, iv_spreads)
-                    .reset_index()
-                    .assign(Pokémon=pokemon.name, League=_LEAGUE_LABELS[league])
-                )
+    for pokemon in selected_pokemons:
+        for league in leagues:
+            ranks_df = _rank_iv_spreads(
+                pokemon.base_stats, cp_multipliers, league.value, settings
+            )
+            iv_spread_ranks_dfs.append(
+                pvp_ranks_m.select_iv_spread_ranks(ranks_df, iv_spreads)
+                .reset_index()
+                .assign(Pokémon=pokemon.name, League=_LEAGUE_LABELS[league])
+            )
     iv_spread_ranks_df = pd.concat(iv_spread_ranks_dfs).sort_values(
         "Rank", kind="stable"
     )
-    st.dataframe(
-        iv_spread_ranks_df[
-            [
-                "Pokémon",
-                "League",
-                *iv_spread_ranks_df.columns.drop(["Pokémon", "League"]),
-            ]
-        ],
-        hide_index=True,
-    )
+    return iv_spread_ranks_df[
+        [
+            "Pokémon",
+            "League",
+            *iv_spread_ranks_df.columns.drop(["Pokémon", "League"]),
+        ]
+    ]

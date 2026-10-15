@@ -53,6 +53,8 @@ The tab has two sections, sharing the following parameters:
 | Level bonus | +0 (No bonus), +1 (Best buddy), +2 (Mega Evolution "Super Max Level"), +3 (Best buddy + Mega Evolution "Super Max Level") | +0 |
 | Include half levels above 50 | on, off | on |
 
+A ranking takes a few seconds, so each section ranks only when its *Rank* button is clicked, which reports any required parameter left empty. Its table stays shown until one of its parameters changes.
+
 ### Best ranks
 
 One Pokémon, chosen from a list searched by name, and one league, both required. The section lists every spread of the IV range by rank, with, for each, its best level, its CP, its IVs, its attack, defense and HP, its stat product (in thousands), its stat product as a percentage of rank 1's, and its IV sum as a percentage of 45.

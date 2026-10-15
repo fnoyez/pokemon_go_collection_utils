@@ -374,8 +374,8 @@ def build_rank_names_text(cp_multipliers, groups, shows_evolved_little_cup):
     ]:
         if (member, league) not in pvp_stats:
             continue
-        rank_1_ivs, rank_1_level, _ = pvp_stats[(member, league)]
-        if rank_1_ivs != "15/15/15":
+        rank_1_ivs, rank_1_level, hundo_level = pvp_stats[(member, league)]
+        if hundo_level < 50:
             name = _build_name(member, league, "1", shows_evolved_little_cup)
             rank_lines.append(f"Max Lvl {name} ({rank_1_ivs}): Lv{rank_1_level:g}")
 

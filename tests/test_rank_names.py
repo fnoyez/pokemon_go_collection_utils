@@ -46,6 +46,7 @@ ENTRIES = [
     make_entry("RHYDON", 112, "Rhydon", (222, 171, 233)),
     make_entry("PICHU", 172, "Pichu", (77, 53, 85), is_baby=True),
     make_entry("SLOWKING", 199, "Slowking", (177, 180, 216)),
+    make_entry("GARCHOMP", 445, "Garchomp", (261, 193, 239)),
     make_entry("RHYPERIOR", 464, "Rhyperior", (241, 190, 251)),
     make_entry("ROCKRUFF", 744, "Rockruff", (117, 78, 128), form_label="Normal"),
     make_entry(
@@ -240,6 +241,27 @@ def get_build_rank_names_text_test_data():
                 Max Lvl PvPCE1 (0/3/4): Lv5.5
                 Max Lvl PvPCE1- (4/15/15): Lv6
                 Max Lvl PvPCE1-- (0/13/9): Lv12
+                """
+            ),
+        },
+        {
+            "id": "rank-1-of-15-15-15-under-a-cap-exceeded-at-level-50",
+            "pokemon": make_pokemon(
+                "GARCHOMP",
+                temporary_evolution_id="MEGA",
+                name="Mega Garchomp",
+                base_stats=(339, 222, 239),
+            ),
+            "shows_evolved_little_cup": True,
+            "expected_text": make_text(
+                """
+                Max lvl to be sure for PvPH trade: Lv16
+                Max lvl to be sure for PvPS trade: Lv9
+                Max lvl to be sure for PvPCE trade: Lv3
+
+                Max Lvl PvPH1 (0/15/10): Lv17
+                Max Lvl PvPS1 (3/15/15): Lv10
+                Max Lvl PvPCE1 (15/15/15): Lv3.5
                 """
             ),
         },

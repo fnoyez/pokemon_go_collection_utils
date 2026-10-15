@@ -106,7 +106,7 @@ In the second, for each member and league:
 Max Lvl PvPS1- (2/15/14): Lv17.5
 ```
 
-with the member's name, its rank 1 IV spread, and the level that spread is ranked at, the highest within the cap. A member whose rank 1 is 15/15/15 has no line for that league.
+with the member's name, its rank 1 IV spread, and the level that spread is ranked at, the highest within the cap. A member within the league's cap at level 50 with 15/15/15 has no line for that league, there being no spread to hunt for it beyond a perfect one; a 15/15/15 rank 1 under a cap it exceeds at level 50 has its line.
 
 **Leagues.** Every member has Great League and Ultra League lines. The Little Cup is for Pokémon that evolve and are not an evolution themselves, babies included: a member has Little Cup lines when it evolves and no Pokémon of the catalog evolves into it, which leaves out Pikachu, an evolution of Pichu, and gives a baby chosen in the section its lines. Little Cup names have no dashes, the first stages being the only members concerned. When the Little Cup for evolved Pokémon is shown, every member has Little Cup lines, with dashes.
 

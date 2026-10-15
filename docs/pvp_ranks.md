@@ -1,6 +1,6 @@
 # PvP ranks — the best IV spreads for a league
 
-The PvP ranks tab tells which IV spreads of a Pokémon are the best for a PvP league, and where given IV spreads stand among them. It serves two uses: knowing which spread to hunt for, and sorting the specimens available, such as those of a raid exclusive, by how good they are for a league.
+The PvP ranks tab tells which IV spreads of a Pokémon are the best for a PvP league, and where given IV spreads stand among them. It serves three uses: knowing which spread to hunt for, sorting the specimens available, such as those of a raid exclusive, by how good they are for a league, and keeping track of what to hunt for in a whole evolutionary line.
 
 ## Concepts
 
@@ -46,7 +46,7 @@ The Pokémon offered are the catalog's entries (see [catalog.md](catalog.md), *C
 
 ## The tab
 
-The tab has two sections, sharing the following parameters:
+The tab has three sections. The first two share the following parameters:
 
 | Parameter | Values | Default |
 |---|---|---|
@@ -54,7 +54,7 @@ The tab has two sections, sharing the following parameters:
 | Level bonus | +0 (No bonus), +1 (Best buddy), +2 (Mega Evolution "Super Max Level"), +3 (Best buddy + Mega Evolution "Super Max Level") | +0 |
 | Include half levels above 50 | on, off | on |
 
-Each section ranks only when its *Rank* button is clicked, which reports any required parameter left empty. Its table stays shown until one of its parameters changes.
+Each section computes only when its button is clicked, which reports any required parameter left empty. Its result stays shown until one of its parameters changes.
 
 ### Best ranks
 
@@ -63,3 +63,74 @@ One Pokémon, chosen from a list searched by name, and one league, both required
 ### Ranks of IV spreads
 
 Several Pokémon, chosen from a list searched by name, several leagues, and IV spreads typed as text, one per line, its three IVs separated by spaces (`10 13 14`). The section shows one table per Pokémon and league, giving the ranks of each spread typed, with the same columns as *Best ranks*, the best rank first. The tables are ordered by Pokémon, then by league, from Little Cup to Ultra League. A spread with an IV below the minimum IV has no relative rank, and is left out.
+
+### Rank-based names
+
+One Pokémon, chosen from a list searched by name, and whether to show the Little Cup for evolved Pokémon (off by default). The section writes, for the Pokémon's evolutionary tree, a text to copy: the rank 1 IV spread of each member of the tree for each league, under a short name to label it with in the game, and the highest level at which a specimen of each member stays within each league's cap whatever its IVs, which is what matters when trading it. The minimum IV is 0 and there is no level bonus, whatever the parameters above say.
+
+#### The evolutionary tree
+
+The tree of a Pokémon is the set of entries connected to it through evolutions, in either direction, and through sharing its species, a regional form excepted: Rockruff (Dusk) is in Rockruff's tree, Alolan Meowth is not in Meowth's. Within a tree, entries of the same species with the same base stats count as one member, the first in catalog order standing for them: Rockruff and Rockruff (Dusk) are one Rockruff, and the four Deerling seasons are one Deerling.
+
+- **Baby Pokémon are left out of a tree**: Pikachu's tree is Pikachu and Raichu, without Pichu.
+- **A baby Pokémon, or a Mega or Primal evolution**, chosen in the section, is a tree of its own, of which it is the only member.
+- **A regional form no evolution leads to**, such as Alolan Exeggutor, is the only member of its tree as a consequence.
+
+#### Names
+
+A name is made of the league's prefix, the rank (1), one dash per stage below the member, and the member's code when it has one:
+
+| League | Prefix |
+|---|---|
+| Little Cup | `PvPCE` |
+| Great League | `PvPS` |
+| Ultra League | `PvPH` |
+
+- **Dashes.** A member's number of stages is the length of the longest chain of evolutions from it to a member evolving no further: none for Rhyperior, one for Rhydon, two for Rhyhorn, which gives `PvPS1`, `PvPS1-` and `PvPS1--`. Dipplin, below Hydrapple, has one.
+- **Codes.** A member below a point where the tree branches has a code of two letters, as has a member of a tree with several first stages, and every member evolving from a member with a code. In Applin's tree, Flapple, Appletun, Dipplin and Hydrapple have codes, and Applin has none: `PvPS1Fl`, `PvPH1Ap`, `PvPS1-Di`, `PvPH1Hy`. A code is the first two letters of the member's name, its accents removed, the first upper case: `Ar` for Armarouge, `Ce` for Ceruledge. When another member with a code has the same species and the same number of stages, the member's form label stands for its name: the Lycanroc forms are named after Midday, Midnight and Dusk.
+- **Distinct codes.** Two members with the same number of stages never share a code. When their first two letters are the same, their codes are their first letter followed by the letter at the first position where all the names concerned differ: Midday and Midnight give `Md` and `Mn`, and Dusk keeps `Du`.
+
+#### The text
+
+Two blocks of lines, separated by an empty line. In the first, for each member and league:
+
+```
+Max lvl to be sure for PvPH- trade: Lv27
+```
+
+with the member's name without its rank, and the highest whole level at which the member with the IV spread 15/15/15 is within the league's cap: a specimen of it at that level or below is within the cap whatever its IVs, which a trade draws again. Evolving keeps the level, so a specimen of an earlier stage is read against the line of the member it is meant to become. Whole levels, since wild specimens are caught at whole levels. A member within the cap at level 50 with 15/15/15 has no line for that league.
+
+In the second, for each member and league:
+
+```
+Max Lvl PvPS1- (2/15/14): Lv17.5
+```
+
+with the member's name, its rank 1 IV spread, and the level that spread is ranked at, the highest within the cap. A member whose rank 1 is 15/15/15 has no line for that league.
+
+**Leagues.** Every member has Great League and Ultra League lines. The Little Cup is for Pokémon that evolve and are not an evolution themselves, babies included: a member has Little Cup lines when it evolves and no Pokémon of the catalog evolves into it, which leaves out Pikachu, an evolution of Pichu, and gives a baby chosen in the section its lines. Little Cup names have no dashes, the first stages being the only members concerned. When the Little Cup for evolved Pokémon is shown, every member has Little Cup lines, with dashes.
+
+**Order.** The members are grouped into branches: a member with a code whose predecessor has none starts a branch, which holds it and the members evolving from it. The branches come in catalog order of the member starting them, then the members with no code. Within a group, the members go from the last stage to the first.
+
+- In the first block, member by member in that order, Ultra League before Great League, then the Little Cup lines.
+- In the second block, branch by branch, and within a group, Ultra League lines before Great League lines, each member by member; then the Little Cup lines.
+
+For Rhyhorn's tree:
+
+```
+Max lvl to be sure for PvPH trade: Lv23
+Max lvl to be sure for PvPS trade: Lv14
+Max lvl to be sure for PvPH- trade: Lv27
+Max lvl to be sure for PvPS- trade: Lv16
+Max lvl to be sure for PvPS-- trade: Lv33
+Max lvl to be sure for PvPCE trade: Lv10
+
+Max Lvl PvPH1 (0/14/14): Lv25
+Max Lvl PvPH1- (0/14/14): Lv29.5
+Max Lvl PvPS1 (0/14/14): Lv15
+Max Lvl PvPS1- (2/15/14): Lv17.5
+Max Lvl PvPS1-- (0/13/15): Lv41
+Max Lvl PvPCE1 (0/13/9): Lv12
+```
+
+The text is shown in a box with a button copying it.

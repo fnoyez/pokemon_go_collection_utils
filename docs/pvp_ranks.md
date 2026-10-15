@@ -34,9 +34,9 @@ A PvP league admits only the specimens whose CP is at most its cap:
 
 A specimen entering a league is powered up to the highest level that keeps it within the cap. What it is worth there is measured by its **stat product**, attack × defense × HP, at that level. Since attack weighs more in CP than in the stat product, a low attack IV lets a specimen reach a higher level under the cap, which is why the best spreads for a league are rarely 15/15/15.
 
-The **rank** of an IV spread, for a Pokémon and a league, is its position in the list of all spreads within the IV range, ordered by decreasing stat product at their best level under the cap, then by decreasing IV sum, then by increasing attack, defense and stamina IV. Rank 1 is the best spread. Since HP is an integer, several spreads can have the same stat product; they still take consecutive ranks.
+The **rank** of an IV spread, for a Pokémon and a league, is its position in a list of spreads, ordered by decreasing stat product at their best level under the cap, then by decreasing IV sum, then by increasing attack, defense and stamina IV. Rank 1 is the best spread. Since HP is an integer, several spreads can have the same stat product; they still take consecutive ranks.
 
-A spread has two ranks: its **absolute rank**, among the spreads from an IV floor of 0 up to the maximum IV, and its **relative rank**, among the spreads of the IV range, from the minimum IV of how the specimen is obtained. The two are equal when the minimum IV is 0. The relative order of two spreads is the same in both rankings, since a spread's best level does not depend on the floor.
+A spread has two ranks: its **absolute rank**, among all the spreads, from an IV floor of 0, and its **relative rank**, among the spreads whose three IVs are at least the minimum IV of how the specimen is obtained. The two are equal when the minimum IV is 0. The relative order of two spreads is the same in both rankings, since a spread's best level does not depend on the floor.
 
 The level of a spread is chosen among the levels reachable with the level bonus: every half level from 1 to 50, then, up to 50 + the bonus, every half level when half levels above 50 are included, and only the whole ones when they are not.
 
@@ -51,7 +51,6 @@ The tab has two sections, sharing the following parameters:
 | Parameter | Values | Default |
 |---|---|---|
 | Minimum IV | 0 (Wild), 2 (Purified), 6 (Shadow legendaries), 10 (Raid, eggs, quests) | 0 |
-| Maximum IV | 0 to 15, at least the minimum IV | 15 |
 | Level bonus | +0 (No bonus), +1 (Best buddy), +2 (Mega Evolution "Super Max Level"), +3 (Best buddy + Mega Evolution "Super Max Level") | +0 |
 | Include half levels above 50 | on, off | on |
 
@@ -59,8 +58,8 @@ Each section ranks only when its *Rank* button is clicked, which reports any req
 
 ### Best ranks
 
-One Pokémon, chosen from a list searched by name, and one league, both required. The section lists every spread of the IV range by relative rank, with, for each, its absolute and relative ranks, its best level, its CP, its IVs, its attack, defense and HP, its stat product (in thousands), its stat product as a percentage of relative rank 1's, and its IV sum as a percentage of 45.
+One Pokémon, chosen from a list searched by name, and one league, both required. The section lists every spread whose IVs are at least the minimum IV by relative rank, with, for each, its absolute and relative ranks, its best level, its CP, its IVs, its attack, defense and HP, its stat product (in thousands), its stat product as a percentage of relative rank 1's, and its IV sum as a percentage of 45.
 
 ### Ranks of IV spreads
 
-Several Pokémon, chosen from a list searched by name, several leagues, and IV spreads typed as text, one per line, its three IVs separated by spaces (`10 13 14`). The section shows one table per Pokémon and league, giving the ranks of each spread typed, with the same columns as *Best ranks*, the best rank first. The tables are ordered by Pokémon, then by league, from Little Cup to Ultra League. A spread outside the IV range has no rank, and is left out.
+Several Pokémon, chosen from a list searched by name, several leagues, and IV spreads typed as text, one per line, its three IVs separated by spaces (`10 13 14`). The section shows one table per Pokémon and league, giving the ranks of each spread typed, with the same columns as *Best ranks*, the best rank first. The tables are ordered by Pokémon, then by league, from Little Cup to Ultra League. A spread with an IV below the minimum IV has no relative rank, and is left out.

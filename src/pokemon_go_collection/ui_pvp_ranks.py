@@ -48,13 +48,11 @@ def render_pvp_ranks_page(db_file_path):
 
 
 def _render_shared_settings():
-    min_iv_column, max_iv_column, level_bonus_column, half_levels_column = st.columns(4)
+    min_iv_column, level_bonus_column, half_levels_column = st.columns(3)
     with min_iv_column:
         min_iv = st.selectbox(
             "Minimum IV", list(_MIN_IV_LABELS), format_func=_MIN_IV_LABELS.get
         )
-    with max_iv_column:
-        max_iv = st.number_input("Maximum IV", min_value=min_iv, max_value=15, value=15)
     with level_bonus_column:
         level_bonus = st.selectbox(
             "Level bonus",
@@ -67,7 +65,6 @@ def _render_shared_settings():
         )
     return {
         "min_iv": min_iv,
-        "max_iv": max_iv,
         "levels": tuple(
             pvp_ranks_m.find_reachable_levels(
                 level_bonus,
@@ -132,7 +129,6 @@ def _rank_iv_spreads(base_stats, cp_multipliers, max_cp, settings):
         max_cp,
         settings["levels"],
         min_iv=settings["min_iv"],
-        max_iv=settings["max_iv"],
     )
 
 
@@ -194,7 +190,9 @@ def _render_iv_spread_ranks(pokemons, cp_multipliers, settings):
         for title, iv_spread_ranks_df in result["iv_spread_ranks"]:
             st.markdown(f"**{title}**")
             if iv_spread_ranks_df.empty:
-                st.caption("None of the IV spreads is within the IV range.")
+                st.caption(
+                    "None of the IV spreads has all its IVs at least the minimum IV."
+                )
             else:
                 st.dataframe(iv_spread_ranks_df, hide_index=True)
 

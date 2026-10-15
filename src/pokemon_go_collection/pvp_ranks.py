@@ -49,17 +49,18 @@ def find_reachable_levels(level_bonus, includes_half_levels_above_50=True):
 
 
 def rank_iv_spreads(
-    base_stats, cp_multipliers, max_cp, levels, min_iv=0, max_iv=15, decimals_nb=5
+    base_stats, cp_multipliers, max_cp, levels, min_iv=0, decimals_nb=5
 ):
-    """Return the IV spreads of the IV range, each at its best level under `max_cp`, by rank.
+    """Return the IV spreads of IVs at least `min_iv`, each at its best level under `max_cp`, by rank.
 
     `cp_multipliers` maps each level to its CP multiplier, and `levels` are the
-    levels a specimen can be at. Each spread has its rank among the spreads of
-    IV floor 0, its absolute rank, and among those of the IV range, its relative
+    levels a specimen can be at. Each spread has its rank among all the spreads,
+    its absolute rank, and among those of IVs at least `min_iv`, its relative
     rank.
     """
     base_attack, base_defense, base_stamina = base_stats
-    ivs = np.arange(0, max_iv + 1)
+    # 15 is the game's maximum IV, not a setting.
+    ivs = np.arange(16)
     # One row per IV spread, by attack IV, then defense IV, then stamina IV, and
     # one column per level.
     att_ivs, def_ivs, sta_ivs = (

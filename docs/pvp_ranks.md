@@ -53,7 +53,7 @@ The tab has two sections, sharing the following parameters:
 | Level bonus | +0 (No bonus), +1 (Best buddy), +2 (Mega Evolution "Super Max Level"), +3 (Best buddy + Mega Evolution "Super Max Level") | +0 |
 | Include half levels above 50 | on, off | on |
 
-A ranking takes a few seconds, so each section ranks only when its *Rank* button is clicked, which reports any required parameter left empty. Its table stays shown until one of its parameters changes.
+Each section ranks only when its *Rank* button is clicked, which reports any required parameter left empty. Its table stays shown until one of its parameters changes.
 
 ### Best ranks
 

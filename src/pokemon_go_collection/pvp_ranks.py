@@ -57,118 +57,69 @@ def rank_iv_spreads(
     levels a specimen can be at.
     """
     base_attack, base_defense, base_stamina = base_stats
-    ivs = list(range(min_iv, max_iv + 1))
-    reachable_levels = [level for level in cp_multipliers if level in set(levels)]
-    return (
-        pd.MultiIndex.from_product(
-            [ivs, ivs, ivs, reachable_levels],
-            names=["att_iv", "def_iv", "sta_iv", "Level"],
+    ivs = np.arange(min_iv, max_iv + 1)
+    # One row per IV spread, by attack IV, then defense IV, then stamina IV, and
+    # one column per level.
+    att_ivs, def_ivs, sta_ivs = (
+        iv_grid.reshape(-1, 1) for iv_grid in np.meshgrid(ivs, ivs, ivs, indexing="ij")
+    )
+    reachable_levels = np.array(
+        [level for level in cp_multipliers if level in set(levels)]
+    )
+    level_cp_multipliers = np.array(
+        [cp_multipliers[level] for level in reachable_levels]
+    )
+    attacks = np.round((base_attack + att_ivs) * level_cp_multipliers, decimals_nb)
+    defenses = np.round((base_defense + def_ivs) * level_cp_multipliers, decimals_nb)
+    unfloored_staminas = (base_stamina + sta_ivs) * level_cp_multipliers
+    hps = np.floor(unfloored_staminas).astype(int)
+    cps = np.floor(
+        np.maximum(
+            10,
+            0.1
+            * attacks
+            * np.sqrt(defenses * np.round(unfloored_staminas, decimals_nb)),
         )
-        .to_frame(index=False)
-        .assign(
-            **{
-                "CP Multiplier": (
-                    lambda df_: df_["Level"].map(cp_multipliers).astype(float)
-                ),
-            }
-        )
-        .assign(
-            **{
-                "Att": (
-                    lambda df_: (
-                        (base_attack + df_["att_iv"]) * df_["CP Multiplier"]
-                    ).round(decimals_nb)
-                ),
-                "Def": (
-                    lambda df_: (
-                        (base_defense + df_["def_iv"]) * df_["CP Multiplier"]
-                    ).round(decimals_nb)
-                ),
-                "HP": (
-                    lambda df_: np.floor(
-                        (base_stamina + df_["sta_iv"]) * df_["CP Multiplier"]
-                    ).astype(int)
-                ),
-                "Non-floored Sta": (
-                    lambda df_: (
-                        (base_stamina + df_["sta_iv"]) * df_["CP Multiplier"]
-                    ).round(decimals_nb)
-                ),
-            }
-        )
-        .assign(
-            **{
-                "Original Stat Product": (
-                    lambda df_: df_["Att"] * df_["Def"] * df_["HP"]
-                ),
-                "CP": (
-                    lambda df_: np.floor(
-                        np.maximum(
-                            10,
-                            0.1
-                            * df_["Att"]
-                            * np.sqrt(df_["Def"] * df_["Non-floored Sta"]),
-                        )
-                    ).astype(int)
-                ),
-                "Original IV Sum": (
-                    lambda df_: df_["att_iv"] + df_["def_iv"] + df_["sta_iv"]
-                ),
-            }
-        )
-        .assign(
-            **{
-                "IVs": (
-                    lambda df_: df_.apply(
-                        lambda record: "/".join(
-                            str(int(record[column_name]))
-                            for column_name in ("att_iv", "def_iv", "sta_iv")
-                        ),
-                        axis=1,
-                    )
-                ),
-                "Stat Product": (
-                    lambda df_: (df_["Original Stat Product"] / 1000).round(3)
-                ),
-            }
-        )
-        .query("CP <= @max_cp")
-        .sort_values(
-            ["Original Stat Product", "Original IV Sum"],
-            ascending=False,
-            kind="stable",
-        )
-        .groupby(["IVs"], as_index=False, sort=False)
-        .first()
-        .reset_index(drop=True)
-        .assign(Rank=lambda df_: df_.index + 1)
-        .set_index(["Rank"])
-        .assign(
-            **{
-                "% Max Stat": (
-                    lambda df_: (
-                        100
-                        * df_["Original Stat Product"]
-                        / df_["Original Stat Product"].iloc[0]
-                    ).round(2)
-                ),
-                "% Max IV Sum": (
-                    lambda df_: (100 * df_["Original IV Sum"] / 45).round(0).astype(int)
-                ),
-            }
-        )[
-            [
-                "Level",
-                "CP",
-                "IVs",
-                "Att",
-                "Def",
-                "HP",
-                "Stat Product",
-                "% Max Stat",
-                "% Max IV Sum",
-            ]
-        ]
+    ).astype(int)
+    stat_products = attacks * defenses * hps
+
+    # The best level of a spread is the one of highest stat product under the
+    # cap, the lowest of several equal ones.
+    is_under_cap = cps <= max_cp
+    best_level_indexes = np.where(is_under_cap, stat_products, -np.inf).argmax(axis=1)
+    best_stat_products = np.take_along_axis(
+        stat_products, best_level_indexes.reshape(-1, 1), axis=1
+    ).ravel()
+    iv_sums = (att_ivs + def_ivs + sta_ivs).ravel()
+    # The sort is stable, so spreads equal in both keys stay in IV order.
+    spread_indexes = np.lexsort((-iv_sums, -best_stat_products))
+    # A spread above the cap at every level has no rank.
+    spread_indexes = spread_indexes[is_under_cap.any(axis=1)[spread_indexes]]
+    level_indexes = best_level_indexes[spread_indexes]
+    spread_stat_products = stat_products[spread_indexes, level_indexes]
+    return pd.DataFrame(
+        {
+            "Level": reachable_levels[level_indexes],
+            "CP": cps[spread_indexes, level_indexes],
+            "IVs": [
+                f"{att_iv}/{def_iv}/{sta_iv}"
+                for att_iv, def_iv, sta_iv in zip(
+                    att_ivs.ravel()[spread_indexes],
+                    def_ivs.ravel()[spread_indexes],
+                    sta_ivs.ravel()[spread_indexes],
+                    strict=True,
+                )
+            ],
+            "Att": attacks[spread_indexes, level_indexes],
+            "Def": defenses[spread_indexes, level_indexes],
+            "HP": hps[spread_indexes, level_indexes],
+            "Stat Product": np.round(spread_stat_products / 1000, 3),
+            "% Max Stat": np.round(
+                100 * spread_stat_products / spread_stat_products[0], 2
+            ),
+            "% Max IV Sum": np.round(100 * iv_sums[spread_indexes] / 45).astype(int),
+        },
+        index=pd.Index(np.arange(1, len(spread_indexes) + 1), name="Rank"),
     )
 
 

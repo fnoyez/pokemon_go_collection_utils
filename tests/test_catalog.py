@@ -484,6 +484,64 @@ def test_build_catalog_names_a_form_by_its_symbol():
     assert [entry.name for entry in entries] == ["Unown (A)", "Unown (!)"]
 
 
+def get_build_form_label_test_data():
+    test_cases = [
+        {
+            "id": "regional-token-as-adjective",
+            "form_id": "TAUROS_PALDEA_AQUA",
+            "species_id": "TAUROS",
+            "expected_label": "Paldean Aqua",
+        },
+        {
+            "id": "words-capitalized",
+            "form_id": "FURFROU_LA_REINE",
+            "species_id": "FURFROU",
+            "expected_label": "La Reine",
+        },
+        {
+            "id": "symbol",
+            "form_id": "UNOWN_QUESTION_MARK",
+            "species_id": "UNOWN",
+            "expected_label": "?",
+        },
+        {
+            "id": "small-word",
+            "form_id": "MAUSHOLD_FAMILY_OF_FOUR",
+            "species_id": "MAUSHOLD",
+            "expected_label": "Family of Four",
+        },
+        {
+            "id": "games-spelling",
+            "form_id": "VIVILLON_POKEBALL",
+            "species_id": "VIVILLON",
+            "expected_label": "Poké Ball",
+        },
+        {
+            "id": "number-named-for-what-it-counts",
+            "form_id": "DUDUNSPARCE_THREE",
+            "species_id": "DUDUNSPARCE",
+            "expected_label": "Three-Segment",
+        },
+    ]
+
+    return [
+        pytest.param(
+            test_case["form_id"],
+            test_case["species_id"],
+            test_case["expected_label"],
+            id=test_case["id"],
+        )
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize(
+    "form_id,species_id,expected_label", get_build_form_label_test_data()
+)
+def test_build_form_label(form_id, species_id, expected_label):
+    assert catalog_m.build_form_label(form_id, species_id) == expected_label
+
+
 def get_build_catalog_statuses_test_data():
     test_cases = [
         {

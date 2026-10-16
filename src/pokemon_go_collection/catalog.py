@@ -24,11 +24,16 @@ _REGIONAL_FORM_TOKEN_ADJECTIVES = {
     "PALDEA": "Paldean",
 }
 
-# How a form suffix written as words reads in an entry's name, where the name
-# shows a symbol.
+# How a form suffix reads in an entry's name, where its words capitalized
+# would not: a symbol, a small word, a spelling of the games' own.
 _FORM_SUFFIX_LABELS = {
     "EXCLAMATION_POINT": "!",
     "QUESTION_MARK": "?",
+    "FAMILY_OF_FOUR": "Family of Four",
+    "FAMILY_OF_THREE": "Family of Three",
+    "POKEBALL": "Poké Ball",
+    "TWO": "Two-Segment",
+    "THREE": "Three-Segment",
 }
 
 

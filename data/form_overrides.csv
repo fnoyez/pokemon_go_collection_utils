@@ -26,6 +26,119 @@ SHELLOS_EAST_SEA,base,,,Each sea of Shellos is collected as a shiny of its own; 
 SHELLOS_WEST_SEA,distinct,,,Each sea of Shellos is collected as a shiny of its own
 GASTRODON_EAST_SEA,base,,,Each sea of Gastrodon is collected as a shiny of its own; the East Sea is the one the formless settings of Shellos evolve into
 GASTRODON_WEST_SEA,distinct,,,Each sea of Gastrodon is collected as a shiny of its own
+SPINDA_00,base,,,Each pattern of Spinda is collected as a shiny of its own
+SPINDA_01,distinct,,,Each pattern of Spinda is collected as a shiny of its own
+SPINDA_02,distinct,,,Each pattern of Spinda is collected as a shiny of its own
+SPINDA_03,distinct,,,Each pattern of Spinda is collected as a shiny of its own
+SPINDA_04,distinct,,,Each pattern of Spinda is collected as a shiny of its own
+SPINDA_05,distinct,,,Each pattern of Spinda is collected as a shiny of its own
+SPINDA_06,distinct,,,Each pattern of Spinda is collected as a shiny of its own
+SPINDA_07,distinct,,,Each pattern of Spinda is collected as a shiny of its own
+SPINDA_08,distinct,,,Each pattern of Spinda is collected as a shiny of its own
+CHERRIM_OVERCAST,base,,,Each form of Cherrim is collected as a shiny of its own
+CHERRIM_SUNNY,distinct,,,Each form of Cherrim is collected as a shiny of its own
+BASCULIN_RED_STRIPED,base,,,Each stripe colour of Basculin is collected as a shiny of its own
+BASCULIN_BLUE_STRIPED,distinct,,,Each stripe colour of Basculin is collected as a shiny of its own
+GENESECT_NORMAL,base,,,Each drive of Genesect is collected as a shiny of its own
+GENESECT_BURN,distinct,,,Each drive of Genesect is collected as a shiny of its own
+GENESECT_CHILL,distinct,,,Each drive of Genesect is collected as a shiny of its own
+GENESECT_DOUSE,distinct,,,Each drive of Genesect is collected as a shiny of its own
+GENESECT_SHOCK,distinct,,,Each drive of Genesect is collected as a shiny of its own
+SCATTERBUG_ARCHIPELAGO,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_CONTINENTAL,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_ELEGANT,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_FANCY,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_GARDEN,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_HIGH_PLAINS,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_ICY_SNOW,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_JUNGLE,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_MARINE,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_MEADOW,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_MODERN,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_MONSOON,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_OCEAN,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_POKEBALL,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_POLAR,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_RIVER,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_SANDSTORM,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_SAVANNA,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_SUN,merge,,,The pattern is collected on Vivillon only
+SCATTERBUG_TUNDRA,merge,,,The pattern is collected on Vivillon only
+SPEWPA_ARCHIPELAGO,merge,,,The pattern is collected on Vivillon only
+SPEWPA_CONTINENTAL,merge,,,The pattern is collected on Vivillon only
+SPEWPA_ELEGANT,merge,,,The pattern is collected on Vivillon only
+SPEWPA_FANCY,merge,,,The pattern is collected on Vivillon only
+SPEWPA_GARDEN,merge,,,The pattern is collected on Vivillon only
+SPEWPA_HIGH_PLAINS,merge,,,The pattern is collected on Vivillon only
+SPEWPA_ICY_SNOW,merge,,,The pattern is collected on Vivillon only
+SPEWPA_JUNGLE,merge,,,The pattern is collected on Vivillon only
+SPEWPA_MARINE,merge,,,The pattern is collected on Vivillon only
+SPEWPA_MEADOW,merge,,,The pattern is collected on Vivillon only
+SPEWPA_MODERN,merge,,,The pattern is collected on Vivillon only
+SPEWPA_MONSOON,merge,,,The pattern is collected on Vivillon only
+SPEWPA_OCEAN,merge,,,The pattern is collected on Vivillon only
+SPEWPA_POKEBALL,merge,,,The pattern is collected on Vivillon only
+SPEWPA_POLAR,merge,,,The pattern is collected on Vivillon only
+SPEWPA_RIVER,merge,,,The pattern is collected on Vivillon only
+SPEWPA_SANDSTORM,merge,,,The pattern is collected on Vivillon only
+SPEWPA_SAVANNA,merge,,,The pattern is collected on Vivillon only
+SPEWPA_SUN,merge,,,The pattern is collected on Vivillon only
+SPEWPA_TUNDRA,merge,,,The pattern is collected on Vivillon only
+VIVILLON_ARCHIPELAGO,base,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_CONTINENTAL,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_ELEGANT,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_FANCY,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_GARDEN,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_HIGH_PLAINS,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_ICY_SNOW,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_JUNGLE,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_MARINE,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_MEADOW,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_MODERN,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_MONSOON,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_OCEAN,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_POKEBALL,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_POLAR,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_RIVER,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_SANDSTORM,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_SAVANNA,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_SUN,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+VIVILLON_TUNDRA,distinct,,,Each pattern of Vivillon is collected as a shiny of its own
+FLABEBE_RED,base,,,Each flower colour of Flabébé is collected as a shiny of its own; the Red Flower is the one the formless settings evolve as
+FLABEBE_YELLOW,distinct,,,Each flower colour of Flabébé is collected as a shiny of its own
+FLABEBE_ORANGE,distinct,,,Each flower colour of Flabébé is collected as a shiny of its own
+FLABEBE_BLUE,distinct,,,Each flower colour of Flabébé is collected as a shiny of its own
+FLABEBE_WHITE,distinct,,,Each flower colour of Flabébé is collected as a shiny of its own
+FLOETTE_RED,base,,,Each flower colour of Floette is collected as a shiny of its own; the Red Flower is the one the formless settings evolve as
+FLOETTE_YELLOW,distinct,,,Each flower colour of Floette is collected as a shiny of its own
+FLOETTE_ORANGE,distinct,,,Each flower colour of Floette is collected as a shiny of its own
+FLOETTE_BLUE,distinct,,,Each flower colour of Floette is collected as a shiny of its own
+FLOETTE_WHITE,distinct,,,Each flower colour of Floette is collected as a shiny of its own
+FLORGES_RED,base,,,Each flower colour of Florges is collected as a shiny of its own; the formless Floette settings evolve into the Red Flower
+FLORGES_YELLOW,distinct,,,Each flower colour of Florges is collected as a shiny of its own
+FLORGES_ORANGE,distinct,,,Each flower colour of Florges is collected as a shiny of its own
+FLORGES_BLUE,distinct,,,Each flower colour of Florges is collected as a shiny of its own
+FLORGES_WHITE,distinct,,,Each flower colour of Florges is collected as a shiny of its own
+FURFROU_NATURAL,base,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_HEART,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_STAR,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_DIAMOND,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_DEBUTANTE,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_MATRON,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_DANDY,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_LA_REINE,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_KABUKI,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+FURFROU_PHARAOH,distinct,,,Each trim of Furfrou is collected as a shiny of its own
+TOXTRICITY_AMPED,base,,,Each form of Toxtricity is collected as a shiny of its own
+TOXTRICITY_LOW_KEY,distinct,,,Each form of Toxtricity is collected as a shiny of its own
+SINISTEA_PHONY,base,,,Each form of Sinistea is collected as a shiny of its own
+SINISTEA_ANTIQUE,distinct,,,Each form of Sinistea is collected as a shiny of its own
+POLTEAGEIST_PHONY,base,,,Each form of Polteageist is collected as a shiny of its own
+POLTEAGEIST_ANTIQUE,distinct,,,Each form of Polteageist is collected as a shiny of its own
+MAUSHOLD_FAMILY_OF_FOUR,base,,,Each family of Maushold is collected as a shiny of its own
+MAUSHOLD_FAMILY_OF_THREE,distinct,,,Each family of Maushold is collected as a shiny of its own
+DUDUNSPARCE_TWO,base,,,Each form of Dudunsparce is collected as a shiny of its own
+DUDUNSPARCE_THREE,distinct,,,Each form of Dudunsparce is collected as a shiny of its own
 DEERLING_SPRING,base,,,Each season of Deerling is collected as a shiny of its own
 DEERLING_SUMMER,distinct,,,Each season of Deerling is collected as a shiny of its own
 DEERLING_AUTUMN,distinct,,,Each season of Deerling is collected as a shiny of its own

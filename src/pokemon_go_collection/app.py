@@ -47,7 +47,7 @@ def main():
         ["Shundos", "Spawn watch", "PvP ranks"]
     )
     with shundos_tab:
-        ui_shundos_m.render_shundos_page(cfg.db_file_path)
+        ui_shundos_m.render_shundos_page(cfg.db_file_path, cfg.icons_folder_path)
     with spawn_watch_tab:
         ui_spawn_watch_m.render_spawn_watch_page(cfg)
     with pvp_ranks_tab:

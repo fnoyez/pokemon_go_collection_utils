@@ -79,7 +79,7 @@ The application runs a refresh when it starts and the last successful one is old
 
 Marking a shundo is a click on the Pokémon's icon. Streamlit's own widgets cannot do this at the scale of the catalog: an image is not clickable, and over a thousand checkboxes would redraw the whole page at every click. The grid is therefore a Streamlit component (`st.components.v2`): HTML, CSS and JavaScript held in the repository, with no frontend build step.
 
-- Python passes the component the entries to show, grouped and ordered, with their state and icon URL.
+- Python passes the component the entries to show, grouped and ordered, with their state and icon URL. The URL carries the icon file's modification time, so that an icon downloaded again under the same file name, when an entry comes to stand for another form, replaces the one the browser cached.
 - A click on a markable icon toggles it in the browser immediately. The component then sends Python the ownership asked for every entry clicked since the page was loaded, and Python makes `SHUNDO` match it. Sending the whole mapping rather than the last click is what keeps rapid clicks safe: Streamlit may coalesce several events into one rerun, and the mapping still holds each of them.
 - The tab redraws inside a Streamlit fragment, so a click does not rerun the rest of the page.
 

@@ -27,17 +27,17 @@ _FILTER_STATES = {
 }
 
 
-def render_shundos_page(db_file_path):
+def render_shundos_page(db_file_path, icons_folder_path):
     st.header("Shundos")
     st.caption(
         "Click a Pokémon to mark or unmark it as owned as a shundo. Silhouettes are "
         "not released in Pokémon GO, greyed-out ones have no shiny released yet."
     )
-    _render_shundo_board(db_file_path)
+    _render_shundo_board(db_file_path, icons_folder_path)
 
 
 @st.fragment
-def _render_shundo_board(db_file_path):
+def _render_shundo_board(db_file_path, icons_folder_path):
     today = datetime.date.today()
     board_entries = shundos_m.load_board_entries(db_file_path, today)
     if not board_entries:
@@ -60,7 +60,12 @@ def _render_shundo_board(db_file_path):
     with search_column:
         search_text = st.text_input("Search", key="shundo_board_search")
 
-    groups = build_grid_groups(board_entries, _FILTER_STATES[board_filter], search_text)
+    groups = build_grid_groups(
+        board_entries,
+        _find_icon_versions(icons_folder_path),
+        _FILTER_STATES[board_filter],
+        search_text,
+    )
     if not groups:
         st.info("No Pokémon matches.")
         return
@@ -101,8 +106,11 @@ def _render_hunt_list_download(db_file_path, board_entries):
     )
 
 
-def build_grid_groups(board_entries, shown_states, search_text):
+def build_grid_groups(board_entries, icon_versions, shown_states, search_text):
     """Group the entries shown by region, each region's variant block in a section of its own.
+
+    `icon_versions` maps each icon file name to its version, from
+    `_find_icon_versions`.
 
     Each region's summary counts its owned and markable entries over the whole
     board, whatever the filter shows.
@@ -123,7 +131,7 @@ def build_grid_groups(board_entries, shown_states, search_text):
             {
                 "title": title,
                 "entries": [
-                    _build_grid_entry(entry)
+                    _build_grid_entry(entry, icon_versions)
                     for entry in shown_entries
                     if entry.is_variant == is_variant
                 ],
@@ -140,12 +148,19 @@ def build_grid_groups(board_entries, shown_states, search_text):
     return groups
 
 
-def _build_grid_entry(board_entry):
+def _build_grid_entry(board_entry, icon_versions):
+    icon_file_name = board_entry.icon_file_name
     return {
         "id": board_entry.entry_id,
         "name": board_entry.name,
         "dex": board_entry.dex_number,
-        "icon": board_entry.icon_file_name,
+        # The version in the URL makes the browser fetch an icon downloaded
+        # again under the same file name, rather than show the one it cached.
+        "icon": (
+            None
+            if icon_file_name is None
+            else f"{icon_file_name}?v={icon_versions[icon_file_name]}"
+        ),
         "state": board_entry.state.value,
     }
 
@@ -158,6 +173,14 @@ def _build_region_summary(region_entries):
         entry.state in shundos_m.MARKABLE_ENTRY_STATES for entry in region_entries
     )
     return f"{owned_nb} / {markable_nb} shundos"
+
+
+def _find_icon_versions(icons_folder_path):
+    """Map each icon file name to its modification time, which changes when it is downloaded again."""
+    return {
+        icon_file_path.name: icon_file_path.stat().st_mtime_ns
+        for icon_file_path in icons_folder_path.iterdir()
+    }
 
 
 def _apply_grid_changes(db_file_path, today):

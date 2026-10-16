@@ -244,7 +244,7 @@ SHINY_RELEASES = [
     ),
 ]
 
-RELEASE_OVERRIDE_ENTRY_IDS = frozenset({"UNOWN"})
+RELEASE_OVERRIDES = {"UNOWN": None, "SIRFETCHD": datetime.date(2020, 9, 1)}
 
 
 def test_build_catalog_orders_entries():
@@ -254,7 +254,7 @@ def test_build_catalog_orders_entries():
         FORM_OVERRIDES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
-        RELEASE_OVERRIDE_ENTRY_IDS,
+        RELEASE_OVERRIDES,
     )
 
     actual_order = [
@@ -287,7 +287,7 @@ def test_build_catalog_names_entries_and_merges_forms():
         FORM_OVERRIDES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
-        RELEASE_OVERRIDE_ENTRY_IDS,
+        RELEASE_OVERRIDES,
     )
 
     actual_entries = {entry.entry_id: (entry.name, entry.form_ids) for entry in entries}
@@ -310,7 +310,7 @@ def test_build_catalog_takes_the_temporary_evolutions_of_the_representative_form
         FORM_OVERRIDES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
-        RELEASE_OVERRIDE_ENTRY_IDS,
+        RELEASE_OVERRIDES,
     )
 
     actual_temporary_evolutions = {
@@ -330,7 +330,7 @@ def test_build_catalog_links_evolutions():
         FORM_OVERRIDES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
-        RELEASE_OVERRIDE_ENTRY_IDS,
+        RELEASE_OVERRIDES,
     )
 
     actual_evolutions = {
@@ -414,7 +414,7 @@ def test_build_catalog_splits_a_species_whose_base_form_an_override_chooses():
         form_overrides,
         pvpoke_species=[],
         shiny_releases=[],
-        release_override_entry_ids=frozenset(),
+        release_overrides={},
     )
 
     actual_entries = [
@@ -478,7 +478,7 @@ def test_build_catalog_names_a_form_by_its_symbol():
         form_overrides,
         pvpoke_species=[],
         shiny_releases=[],
-        release_override_entry_ids=frozenset(),
+        release_overrides={},
     )
 
     assert [entry.name for entry in entries] == ["Unown (A)", "Unown (!)"]
@@ -575,6 +575,12 @@ def get_build_catalog_statuses_test_data():
             "expected_shiny_release_date": datetime.date(2027, 1, 1),
         },
         {
+            "id": "release-override-with-a-shiny-leekduck-does-not-list",
+            "entry_id": "SIRFETCHD",
+            "expected_is_released": True,
+            "expected_shiny_release_date": datetime.date(2020, 9, 1),
+        },
+        {
             "id": "pvpoke-unreleased",
             "entry_id": "KLEAVOR",
             "expected_is_released": False,
@@ -606,7 +612,7 @@ def test_build_catalog_statuses(
         FORM_OVERRIDES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
-        RELEASE_OVERRIDE_ENTRY_IDS,
+        RELEASE_OVERRIDES,
     )
 
     entry = next(entry for entry in entries if entry.entry_id == entry_id)

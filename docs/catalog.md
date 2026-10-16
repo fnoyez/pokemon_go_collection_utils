@@ -13,10 +13,11 @@ The catalog is the reference list every feature works on: one entry per distinct
 | Icons, PokeMiners `pogo_assets` | The Pokémon GO icon of each form, normal and shiny. PokeAPI's sprite stands in for a Pokémon with no Pokémon GO icon. | Each refresh, for the icons not cached yet |
 | `data/form_overrides.csv`, `data/release_overrides.csv` | Corrections maintained by hand, described below. | Committed |
 
-Two limits of the sources shape the rules below:
+Three limits of the sources shape the rules below:
 
 - **The game master lists Pokémon that are not released.** Niantic ships the data of species and forms ahead of their release, so its presence says nothing about availability, and it carries no shiny information at all. Release statuses come from PvPoke and LeekDuck instead.
 - **PvPoke flags a Pokémon as unreleased when it cannot battle**, Ditto, Shedinja or Cosmog among them, since its subject is battling. A shiny release seen on LeekDuck, or an entry of `data/release_overrides.csv`, marks such a Pokémon released.
+- **Neither PvPoke nor LeekDuck knows a form that looks like its species' usual form**, such as the Dusk Form Rockruff, which evolves into Dusk Form Lycanroc. An entry of `data/release_overrides.csv` marks such a form released, with the date of its shiny release.
 
 ## Catalog entries
 
@@ -64,7 +65,7 @@ Galar thus ends with Galarian Meowth → Perrserker, Galarian Ponyta → Galaria
 Each entry carries two statuses, which decide whether it can be marked as owned:
 
 - **Released**: PvPoke flags one of the entry's forms as released, a shiny of it has been released, or `data/release_overrides.csv` names it. PvPoke's species identifiers are matched to the game master's form identifiers by name.
-- **Shiny released**: LeekDuck lists a shiny of one of the entry's forms with a release date no later than today. LeekDuck's own costume entries never match. The earliest such date is kept as the shiny release date. LeekDuck lists announced releases ahead of time, which is why the date is compared rather than the listing alone.
+- **Shiny released**: LeekDuck lists a shiny of one of the entry's forms with a release date no later than today. LeekDuck's own costume entries never match. The earliest such date is kept as the shiny release date. LeekDuck lists announced releases ahead of time, which is why the date is compared rather than the listing alone. For an entry LeekDuck lists no shiny of, the date `data/release_overrides.csv` gives it, if any, stands in.
 
 An entry is shown according to the first of these that applies:
 

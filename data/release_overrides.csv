@@ -1,3 +1,4 @@
-entry_id,reason
-COSMOG,Released; PvPoke lists it unreleased because it cannot battle
-COSMOEM,Released; PvPoke lists it unreleased because it cannot battle
+entry_id,shiny_release_date,reason
+COSMOG,,Released; PvPoke lists it unreleased because it cannot battle
+COSMOEM,,Released; PvPoke lists it unreleased because it cannot battle
+ROCKRUFF_DUSK,2023-01-06,Neither PvPoke nor LeekDuck tells it apart from Rockruff; its shiny is out no later than shiny Dusk Lycanroc, which only it evolves into

@@ -87,7 +87,7 @@ def build_catalog(
     form_overrides,
     pvpoke_species,
     shiny_releases,
-    release_override_entry_ids,
+    release_overrides,
 ):
     drafts, evolution_edges = build_entry_drafts(
         national_dex_species, game_master, form_overrides
@@ -98,8 +98,14 @@ def build_catalog(
     }
     released_entry_ids = find_pvpoke_released_entry_ids(drafts, pvpoke_species)
     shiny_release_dates = find_shiny_release_dates(drafts, shiny_releases)
+    # An override's date stands in for a shiny LeekDuck does not list.
+    override_shiny_release_dates = {
+        entry_id: shiny_release_date
+        for entry_id, shiny_release_date in release_overrides.items()
+        if shiny_release_date is not None
+    }
 
-    unknown_override_entry_ids = release_override_entry_ids - {
+    unknown_override_entry_ids = release_overrides.keys() - {
         draft.entry_id for draft in drafts
     }
     if unknown_override_entry_ids:
@@ -125,9 +131,11 @@ def build_catalog(
             tuple(evolution_edges.get(draft.entry_id, [])),
             is_released=(
                 draft.entry_id in released_entry_ids
-                or draft.entry_id in release_override_entry_ids
+                or draft.entry_id in release_overrides
             ),
-            shiny_release_date=shiny_release_dates.get(draft.entry_id),
+            shiny_release_date=shiny_release_dates.get(
+                draft.entry_id, override_shiny_release_dates.get(draft.entry_id)
+            ),
         )
         for display_order, (draft, region, is_variant) in enumerate(ordered_drafts)
     ]

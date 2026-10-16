@@ -1,5 +1,6 @@
 import csv
 import dataclasses
+import datetime
 import enum
 
 from pokemon_go_collection import regions as regions_m
@@ -47,6 +48,14 @@ def load_form_overrides(file_path):
         }
 
 
-def load_release_override_entry_ids(file_path):
+def load_release_overrides(file_path):
+    """Return the shiny release date of each entry named, or None for an entry given none."""
     with open(file_path, encoding="utf-8", newline="") as file:
-        return frozenset(row["entry_id"] for row in csv.DictReader(file))
+        return {
+            row["entry_id"]: (
+                datetime.date.fromisoformat(row["shiny_release_date"])
+                if row["shiny_release_date"]
+                else None
+            )
+            for row in csv.DictReader(file)
+        }

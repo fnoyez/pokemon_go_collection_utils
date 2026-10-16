@@ -91,7 +91,7 @@ def run_refresh(cfg, now):
             ),
             pvpoke_m.parse_pvpoke_game_master(pvpoke_content),
             leekduck_m.parse_shiny_data(leekduck_content),
-            overrides_m.load_release_override_entry_ids(
+            overrides_m.load_release_overrides(
                 cfg.data_folder_path / "release_overrides.csv"
             ),
         )

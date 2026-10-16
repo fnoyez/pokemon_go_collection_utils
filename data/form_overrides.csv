@@ -22,6 +22,10 @@ ZYGARDE_FIFTY_PERCENT,merge,,,The species' usual form; it evolves into the Compl
 ZYGARDE_COMPLETE_FIFTY_PERCENT,merge,,,The Complete Forme reverted to its 50% Forme
 ZYGARDE_COMPLETE_TEN_PERCENT,merge,ZYGARDE_TEN_PERCENT,,The Complete Forme reverted to its 10% Forme
 BASCULIN_WHITE_STRIPED,distinct,,Hisui,Starts the line of Basculegion; both were introduced in Hisui
+SHELLOS_EAST_SEA,base,,,Each sea of Shellos is collected as a shiny of its own; the East Sea is the one the formless settings evolve as
+SHELLOS_WEST_SEA,distinct,,,Each sea of Shellos is collected as a shiny of its own
+GASTRODON_EAST_SEA,base,,,Each sea of Gastrodon is collected as a shiny of its own; the East Sea is the one the formless settings of Shellos evolve into
+GASTRODON_WEST_SEA,distinct,,,Each sea of Gastrodon is collected as a shiny of its own
 DEERLING_SPRING,base,,,Each season of Deerling is collected as a shiny of its own
 DEERLING_SUMMER,distinct,,,Each season of Deerling is collected as a shiny of its own
 DEERLING_AUTUMN,distinct,,,Each season of Deerling is collected as a shiny of its own

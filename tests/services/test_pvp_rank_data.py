@@ -1,3 +1,5 @@
+import pytest
+
 from pokemon_go_collection import catalog as catalog_m
 from pokemon_go_collection import db as db_m
 from pokemon_go_collection import migrate as migrate_m
@@ -21,7 +23,9 @@ def test_load_rankable_pokemons_leaves_out_entries_without_stats(tmp_path):
         )
 
     assert pvp_rank_data_m.load_rankable_pokemons(db_file_path) == [
-        pvp_rank_data_m.RankablePokemon("AZUMARILL", None, "Azumarill", (112, 152, 225))
+        pvp_rank_data_m.RankablePokemon(
+            "AZUMARILL", None, None, 184, "Azumarill", (112, 152, 225)
+        )
     ]
 
 
@@ -31,6 +35,7 @@ def make_entry(
     display_order,
     base_stats,
     temporary_evolutions=(),
+    battle_forms=(),
     name=None,
     form_ids=None,
 ):
@@ -46,6 +51,7 @@ def make_entry(
         pokemon_class=None,
         base_stats=base_stats,
         temporary_evolutions=temporary_evolutions,
+        battle_forms=battle_forms,
         is_baby=False,
         evolution_target_entry_ids=(),
         is_released=True,
@@ -111,18 +117,64 @@ def test_load_rankable_pokemons_lists_temporary_evolutions_after_their_entry(
 
     assert pvp_rank_data_m.load_rankable_pokemons(db_file_path) == [
         pvp_rank_data_m.RankablePokemon(
-            "CHARIZARD", None, "Charizard", (223, 173, 186)
+            "CHARIZARD", None, None, 6, "Charizard", (223, 173, 186)
         ),
         pvp_rank_data_m.RankablePokemon(
-            "CHARIZARD", "MEGA_X", "Mega Charizard X", (273, 213, 186)
+            "CHARIZARD", "MEGA_X", None, 6, "Mega Charizard X", (273, 213, 186)
         ),
         pvp_rank_data_m.RankablePokemon(
-            "CHARIZARD", "MEGA_Y", "Mega Charizard Y", (319, 212, 186)
+            "CHARIZARD", "MEGA_Y", None, 6, "Mega Charizard Y", (319, 212, 186)
         ),
-        pvp_rank_data_m.RankablePokemon("SQUIRTLE", None, "Squirtle", (94, 121, 127)),
-        pvp_rank_data_m.RankablePokemon("KYOGRE", None, "Kyogre", (270, 228, 205)),
         pvp_rank_data_m.RankablePokemon(
-            "KYOGRE", "PRIMAL", "Primal Kyogre", (353, 268, 205)
+            "SQUIRTLE", None, None, 7, "Squirtle", (94, 121, 127)
+        ),
+        pvp_rank_data_m.RankablePokemon(
+            "KYOGRE", None, None, 382, "Kyogre", (270, 228, 205)
+        ),
+        pvp_rank_data_m.RankablePokemon(
+            "KYOGRE", "PRIMAL", None, 382, "Primal Kyogre", (353, 268, 205)
+        ),
+    ]
+
+
+def test_load_rankable_pokemons_lists_battle_forms_after_their_entry(tmp_path):
+    db_file_path = tmp_path / "collection.sqlite"
+    migrate_m.init_db(db_file_path)
+    with db_m.db_conn(db_file_path) as conn:
+        refresh_m.write_catalog(
+            conn,
+            [
+                make_entry(
+                    "MINIOR",
+                    774,
+                    0,
+                    (116, 194, 155),
+                    battle_forms=(
+                        catalog_m.BattleForm(
+                            "MINIOR_BLUE", "Minior (Blue)", (218, 131, 155)
+                        ),
+                        catalog_m.BattleForm(
+                            "MINIOR_GREEN", "Minior (Green)", (218, 131, 155)
+                        ),
+                    ),
+                ),
+                make_entry("KOMALA", 775, 1, (216, 165, 163)),
+            ],
+            {"MINIOR": None, "KOMALA": None},
+        )
+
+    assert pvp_rank_data_m.load_rankable_pokemons(db_file_path) == [
+        pvp_rank_data_m.RankablePokemon(
+            "MINIOR", None, None, 774, "Minior", (116, 194, 155)
+        ),
+        pvp_rank_data_m.RankablePokemon(
+            "MINIOR", None, "MINIOR_BLUE", 774, "Minior (Blue)", (218, 131, 155)
+        ),
+        pvp_rank_data_m.RankablePokemon(
+            "MINIOR", None, "MINIOR_GREEN", 774, "Minior (Green)", (218, 131, 155)
+        ),
+        pvp_rank_data_m.RankablePokemon(
+            "KOMALA", None, None, 775, "Komala", (216, 165, 163)
         ),
     ]
 
@@ -195,3 +247,66 @@ def test_load_cp_multipliers_reads_what_a_refresh_writes(tmp_path):
         refresh_m.write_cp_multipliers(conn, cp_multipliers)
 
     assert pvp_rank_data_m.load_cp_multipliers(db_file_path) == cp_multipliers
+
+
+def make_pokemon(name):
+    return pvp_rank_data_m.RankablePokemon(name.upper(), None, None, 0, name, (1, 1, 1))
+
+
+POKEMONS = [
+    make_pokemon("Minior"),
+    make_pokemon("Minior (Blue)"),
+    make_pokemon("Flabébé (Red)"),
+    make_pokemon("Raichu"),
+]
+
+
+def get_find_pokemons_by_name_test_data():
+    test_cases = [
+        {
+            "id": "substring-any-case",
+            "name_part": "mINIo",
+            "expected_names": ["Minior", "Minior (Blue)"],
+        },
+        {
+            "id": "form-label",
+            "name_part": "blue",
+            "expected_names": ["Minior (Blue)"],
+        },
+        {
+            "id": "accents-ignored",
+            "name_part": "flabebe",
+            "expected_names": ["Flabébé (Red)"],
+        },
+        {
+            "id": "accented-search-text",
+            "name_part": "Flabé",
+            "expected_names": ["Flabébé (Red)"],
+        },
+        {
+            "id": "surrounding-spaces-ignored",
+            "name_part": " raichu ",
+            "expected_names": ["Raichu"],
+        },
+        {
+            "id": "nothing-found",
+            "name_part": "pikachu",
+            "expected_names": [],
+        },
+    ]
+
+    return [
+        pytest.param(
+            test_case["name_part"], test_case["expected_names"], id=test_case["id"]
+        )
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize(
+    "name_part,expected_names", get_find_pokemons_by_name_test_data()
+)
+def test_find_pokemons_by_name(name_part, expected_names):
+    found_pokemons = pvp_rank_data_m.find_pokemons_by_name(POKEMONS, name_part)
+
+    assert [pokemon.name for pokemon in found_pokemons] == expected_names

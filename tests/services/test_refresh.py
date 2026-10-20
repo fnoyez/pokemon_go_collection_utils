@@ -55,6 +55,7 @@ def make_entry(entry_id, display_order, shiny_release_date=None):
         pokemon_class=None,
         base_stats=None,
         temporary_evolutions=(),
+        battle_forms=(),
         is_baby=False,
         evolution_target_entry_ids=(),
         is_released=True,

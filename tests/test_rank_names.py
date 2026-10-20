@@ -63,6 +63,7 @@ ENTRIES = [
     make_entry(
         "LYCANROC_DUSK", 745, "Lycanroc (Dusk)", (234, 139, 181), form_label="Dusk"
     ),
+    make_entry("MINIOR", 774, "Minior", (116, 194, 155)),
     make_entry("APPLIN", 840, "Applin", (71, 116, 120)),
     make_entry("FLAPPLE", 841, "Flapple", (214, 144, 172)),
     make_entry("APPLETUN", 842, "Appletun", (178, 146, 242)),
@@ -86,11 +87,19 @@ EVOLUTION_EDGES = [
 ]
 
 
-def make_pokemon(entry_id, temporary_evolution_id=None, name=None, base_stats=None):
+def make_pokemon(
+    entry_id,
+    temporary_evolution_id=None,
+    battle_form_id=None,
+    name=None,
+    base_stats=None,
+):
     entry = next(entry for entry in ENTRIES if entry.entry_id == entry_id)
     return pvp_rank_data_m.RankablePokemon(
         entry_id,
         temporary_evolution_id,
+        battle_form_id,
+        entry.dex_number,
         name or entry.name,
         base_stats or entry.base_stats,
     )
@@ -164,6 +173,16 @@ def get_build_evolution_tree_test_data():
                 base_stats=(319, 212, 186),
             ),
             "expected_groups": [[("Mega Charizard Y", 0, None, False)]],
+        },
+        {
+            "id": "battle-form-alone",
+            "pokemon": make_pokemon(
+                "MINIOR",
+                battle_form_id="MINIOR_BLUE",
+                name="Minior (Blue)",
+                base_stats=(218, 131, 155),
+            ),
+            "expected_groups": [[("Minior (Blue)", 0, None, False)]],
         },
     ]
 

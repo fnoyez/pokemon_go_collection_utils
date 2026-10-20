@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from pokemon_go_collection import pvp_ranks as pvp_ranks_m
@@ -42,8 +43,8 @@ def render_pvp_ranks_page(db_file_path):
         return
 
     settings = _render_shared_settings()
-    best_ranks_tab, iv_spread_ranks_tab, rank_names_tab = st.tabs(
-        ["Best ranks", "Ranks of IV spreads", "Rank-based names"]
+    best_ranks_tab, iv_spread_ranks_tab, rank_names_tab, base_stats_tab = st.tabs(
+        ["Best ranks", "Ranks of IV spreads", "Rank-based names", "Base stats"]
     )
     with best_ranks_tab:
         _render_best_ranks(pokemons, cp_multipliers, settings)
@@ -51,6 +52,8 @@ def render_pvp_ranks_page(db_file_path):
         _render_iv_spread_ranks(pokemons, cp_multipliers, settings)
     with rank_names_tab:
         _render_rank_names(db_file_path, pokemons, cp_multipliers)
+    with base_stats_tab:
+        _render_base_stats(pokemons)
 
 
 def _render_shared_settings():
@@ -274,3 +277,31 @@ def _render_rank_names(db_file_path, pokemons, cp_multipliers):
                 "Nothing to write: every member's rank 1 is 15/15/15, within each "
                 "cap at level 50."
             )
+
+
+def _render_base_stats(pokemons):
+    st.caption(
+        "The base stats of the Pokémon offered in this tab, their battle forms and "
+        "Mega and Primal evolutions included, found by a part of their name."
+    )
+    name_part = st.text_input(
+        "Name contains", placeholder="minior", key="base_stats_name_part"
+    )
+    if not name_part.strip():
+        return
+    found_pokemons = pvp_rank_data_m.find_pokemons_by_name(pokemons, name_part)
+    if not found_pokemons:
+        st.caption("No Pokémon has this in its name.")
+        return
+    st.dataframe(
+        pd.DataFrame(
+            {
+                "Pokémon": [pokemon.name for pokemon in found_pokemons],
+                "#": [pokemon.dex_number for pokemon in found_pokemons],
+                "Attack": [pokemon.base_stats[0] for pokemon in found_pokemons],
+                "Defense": [pokemon.base_stats[1] for pokemon in found_pokemons],
+                "Stamina": [pokemon.base_stats[2] for pokemon in found_pokemons],
+            }
+        ),
+        hide_index=True,
+    )

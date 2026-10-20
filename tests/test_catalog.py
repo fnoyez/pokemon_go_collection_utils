@@ -484,6 +484,62 @@ def test_build_catalog_names_a_form_by_its_symbol():
     assert [entry.name for entry in entries] == ["Unown (A)", "Unown (!)"]
 
 
+def test_build_catalog_takes_the_battle_forms_overrides_merge_with_their_own_stats():
+    game_master = game_master_m.GameMaster(
+        forms=(
+            make_form("MINIOR", "MINIOR", 774, (116, 194, 155), ("ROCK", "FLYING")),
+            make_form(
+                "MINIOR_METEOR", "MINIOR", 774, (116, 194, 155), ("ROCK", "FLYING")
+            ),
+            make_form(
+                "MINIOR_BLUE", "MINIOR", 774, (218, 131, 155), ("ROCK", "FLYING")
+            ),
+            make_form("MINIOR_RED", "MINIOR", 774, (218, 131, 155), ("ROCK", "FLYING")),
+        ),
+        costume_form_ids=frozenset(),
+        cp_multipliers=(),
+        timestamp=datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc),
+    )
+    # The Meteor form is merged with the stats of the entry, and stays out.
+    form_overrides = {
+        form_id: overrides_m.FormOverride(
+            form_id=form_id,
+            decision=overrides_m.FormDecision.MERGE,
+            target_form_id=None,
+            variant_region=None,
+        )
+        for form_id in ("MINIOR_METEOR", "MINIOR_BLUE", "MINIOR_RED")
+    }
+    minior_species = [
+        national_dex_m.Species(
+            dex_number=774,
+            identifier="minior",
+            name="Minior",
+            evolves_from_dex_number=None,
+            is_baby=False,
+        )
+    ]
+
+    entries = catalog_m.build_catalog(
+        minior_species,
+        game_master,
+        form_overrides,
+        pvpoke_species=[],
+        shiny_releases=[],
+        release_overrides={},
+    )
+
+    assert [(entry.entry_id, entry.battle_forms) for entry in entries] == [
+        (
+            "MINIOR",
+            (
+                catalog_m.BattleForm("MINIOR_BLUE", "Minior (Blue)", (218, 131, 155)),
+                catalog_m.BattleForm("MINIOR_RED", "Minior (Red)", (218, 131, 155)),
+            ),
+        )
+    ]
+
+
 def get_build_form_label_test_data():
     test_cases = [
         {

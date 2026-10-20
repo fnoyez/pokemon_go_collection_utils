@@ -39,6 +39,7 @@ The design is in [spawn_watch.md](spawn_watch.md).
 - For a Pokémon and a PvP league, the application lists the IV spreads by rank, the best first, so the one to hunt for is known, including for a Pokémon not released yet.
 - For several Pokémon and leagues, it gives the rank of IV spreads typed in, such as those of the specimens available, in one table per Pokémon and league.
 - For a Pokémon's evolutionary tree, it writes a text to copy, giving each member's rank 1 IV spread for each league under a short name to label it with in the game, and the highest level at which a specimen stays within each league's cap whatever its IVs, for trades.
+- For a name or a part of it, it lists the matching Pokémon with their base stats, including the forms a Pokémon takes in battle, such as Minior's cores, whose stats are the ones that count in PvP.
 - The ranks follow the stat product under the league's CP cap, and take into account the minimum IV of how the specimen is obtained and the level bonuses beyond level 50.
 
 The concepts and the design are in [pvp_ranks.md](pvp_ranks.md).

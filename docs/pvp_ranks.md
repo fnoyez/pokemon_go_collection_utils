@@ -42,11 +42,11 @@ The level of a spread is chosen among the levels reachable with the level bonus:
 
 ## Pokémon
 
-The Pokémon offered are the catalog's entries (see [catalog.md](catalog.md), *Catalog entries*) whose base form has stats in the game master: a Pokémon in the game master but not released yet is offered, so a spread can be chosen before its release. So are the Mega and Primal evolutions of their representative forms, with the stats the game master gives them: Mega Venusaur, Mega Charizard X and Mega Charizard Y, Primal Kyogre. They are listed by National Pokédex number, the forms of a species in catalog order, its base form first, each entry followed by its Mega and Primal evolutions. An entry stands for its representative form's stats. A refresh stores, with each entry, those base stats and those of its Mega and Primal evolutions, and the CP multipliers of every level.
+The Pokémon offered are the catalog's entries (see [catalog.md](catalog.md), *Catalog entries*) whose base form has stats in the game master: a Pokémon in the game master but not released yet is offered, so a spread can be chosen before its release. So are the Mega and Primal evolutions of their representative forms, with the stats the game master gives them: Mega Venusaur, Mega Charizard X and Mega Charizard Y, Primal Kyogre. So are the entries' battle forms (see [catalog.md](catalog.md), *Catalog entries*), whose stats are the ones a battle uses: Minior is met in its Meteor Form, but battles in its core form, Minior (Blue) to Minior (Yellow). They are listed by National Pokédex number, the forms of a species in catalog order, its base form first, each entry followed by its battle forms, then by its Mega and Primal evolutions. An entry stands for its representative form's stats. A refresh stores, with each entry, those base stats, those of its battle forms and of its Mega and Primal evolutions, and the CP multipliers of every level.
 
 ## The tab
 
-The tab has three sections. The first two share the following parameters:
+The tab has four sections. The first two share the following parameters:
 
 | Parameter | Values | Default |
 |---|---|---|
@@ -54,7 +54,7 @@ The tab has three sections. The first two share the following parameters:
 | Level bonus | +0 (No bonus), +1 (Best buddy), +2 (Mega Evolution "Super Max Level"), +3 (Best buddy + Mega Evolution "Super Max Level") | +0 |
 | Include half levels above 50 | on, off | on |
 
-Each section computes only when its button is clicked, which reports any required parameter left empty. Its result stays shown until one of its parameters changes.
+Each of the first three sections computes only when its button is clicked, which reports any required parameter left empty. Its result stays shown until one of its parameters changes.
 
 ### Best ranks
 
@@ -73,7 +73,7 @@ One Pokémon, chosen from a list searched by name, and whether to show the Littl
 The tree of a Pokémon is the set of entries connected to it through evolutions, in either direction, and through sharing its species, a regional form excepted: Rockruff (Dusk) is in Rockruff's tree, Alolan Meowth is not in Meowth's. Within a tree, entries of the same species with the same base stats count as one member, the first in catalog order standing for them: Rockruff and Rockruff (Dusk) are one Rockruff, and the four Deerling seasons are one Deerling.
 
 - **Baby Pokémon are left out of a tree**: Pikachu's tree is Pikachu and Raichu, without Pichu.
-- **A baby Pokémon, or a Mega or Primal evolution**, chosen in the section, is a tree of its own, of which it is the only member.
+- **A baby Pokémon, a Mega or Primal evolution, or a battle form**, chosen in the section, is a tree of its own, of which it is the only member.
 - **A regional form no evolution leads to**, such as Alolan Exeggutor, is the only member of its tree as a consequence.
 
 #### Names
@@ -134,3 +134,7 @@ Max Lvl PvPCE1 (0/13/9): Lv12
 ```
 
 The text is shown in a box with a button copying it.
+
+### Base stats
+
+A name, or a part of it, typed as text, case and accents aside: `flabebe` finds Flabébé. The section lists the Pokémon offered in the tab whose name contains it, in the order above, with their National Pokédex number and their attack, defense and stamina base stats. `minior` finds Minior and its seven cores. It has no button: the list shows as soon as the text is entered.

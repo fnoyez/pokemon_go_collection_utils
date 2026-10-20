@@ -56,14 +56,16 @@ def build_evolution_tree(entries, evolution_edges, pokemon):
     evolving_entry_ids = {source_entry_id for source_entry_id, _ in evolution_edges}
     evolved_entry_ids = {target_entry_id for _, target_entry_id in evolution_edges}
     entry = entries_by_id[pokemon.entry_id]
-    if pokemon.temporary_evolution_id is not None or entry.is_baby:
+    is_entry_itself = (
+        pokemon.temporary_evolution_id is None and pokemon.battle_form_id is None
+    )
+    if not is_entry_itself or entry.is_baby:
         member = TreeMember(
             pokemon.name,
             pokemon.base_stats,
             0,
             None,
-            pokemon.temporary_evolution_id is None
-            and entry.entry_id in evolving_entry_ids,
+            is_entry_itself and entry.entry_id in evolving_entry_ids,
         )
         return [[member]]
 

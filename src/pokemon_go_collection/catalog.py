@@ -38,6 +38,16 @@ _FORM_SUFFIX_LABELS = {
 
 
 @dataclasses.dataclass(frozen=True)
+class BattleForm:
+    """A form merged into an entry by an override, with base stats of its own."""
+
+    form_id: str
+    name: str
+    # (attack, defense, stamina)
+    stats: tuple[int, int, int]
+
+
+@dataclasses.dataclass(frozen=True)
 class CatalogEntry:
     entry_id: str
     dex_number: int
@@ -57,6 +67,8 @@ class CatalogEntry:
     base_stats: tuple[int, int, int] | None
     # The Mega and Primal evolutions of its representative form.
     temporary_evolutions: tuple[game_master_m.TemporaryEvolution, ...]
+    # In game master order.
+    battle_forms: tuple[BattleForm, ...]
     is_baby: bool
     # The entries it evolves into, in game master order.
     evolution_target_entry_ids: tuple[str, ...]
@@ -127,6 +139,7 @@ def build_catalog(
             draft.pokemon_class,
             draft.base_stats,
             draft.temporary_evolutions,
+            draft.battle_forms,
             draft.dex_number in baby_dex_numbers,
             tuple(evolution_edges.get(draft.entry_id, [])),
             is_released=(
@@ -160,6 +173,7 @@ class EntryDraft:
     pokemon_class: game_master_m.PokemonClass | None
     base_stats: tuple[int, int, int] | None
     temporary_evolutions: tuple[game_master_m.TemporaryEvolution, ...]
+    battle_forms: tuple[BattleForm, ...]
 
 
 def build_entry_drafts(national_dex_species, game_master, form_overrides):
@@ -419,6 +433,7 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
                 pokemon_class=None,
                 base_stats=None,
                 temporary_evolutions=(),
+                battle_forms=(),
             )
         ]
 
@@ -471,6 +486,16 @@ def _build_layout_drafts(layout, entry_id_by_form_key):
                 representative_form.pokemon_class,
                 representative_form.stats,
                 representative_form.temporary_evolutions,
+                tuple(
+                    BattleForm(
+                        form.form_id,
+                        f"{species.name} ({_build_form_label(form)})",
+                        form.stats,
+                    )
+                    for form in entry_forms
+                    if form.form_id in layout.merge_target_form_ids
+                    and form.stats != representative_form.stats
+                ),
             )
         )
     return drafts

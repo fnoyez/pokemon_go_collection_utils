@@ -33,7 +33,7 @@ An entry is a species, or one of its forms that is a distinct Pokémon. Every sp
   - `base` makes a form its species' base form, which the base entry then stands for. With `distinct` lines for the species' other forms, it splits a species whose forms are collected as shinies of their own: Deerling's and Sawsbuck's seasons, Shellos's and Gastrodon's seas, Vivillon's patterns, Furfrou's trims, and Unown's characters, among others. The base entry of such a species is named after its form as well (`Deerling (Spring)`), and the species' entries are ordered as their lines are in the file.
 - **A species absent from the game master** has its base entry only, unreleased.
 
-Each entry also holds the forms merged into it, which is what matching it against LeekDuck and the icons relies on, the class of its first form (legendary, mythical, ultra beast, or none), whether its species is a baby Pokémon, and the entries it evolves into, read as described under *Variant lines* below.
+Each entry also holds the forms merged into it, which is what matching it against LeekDuck and the icons relies on, the class of its first form (legendary, mythical, ultra beast, or none), whether its species is a baby Pokémon, the entries it evolves into, read as described under *Variant lines* below, and its battle forms: the forms a `merge` override joins to it whose stats differ from its representative form's, such as Minior's cores, Aegislash's Blade Forme or Palafin's Hero Form, each with its stats and a name made like a form entry's (`Minior (Blue)`).
 
 ## Grouping and ordering
 

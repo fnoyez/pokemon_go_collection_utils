@@ -13,7 +13,7 @@ The spawn watch searches, at a fixed interval, for spawns that will be shundos f
 | `GET /reveal/<reveal_code>` | The spawn's coordinates, as `lat,lng` in `coords`. Public, rate limited per hour. |
 | `GET /users/me` | The logged-in account, which is how a token is checked. |
 
-The site's terms forbid automated requests beyond what a single human user would generate. The watch stays within that: one search per check, with checks never closer than 5 minutes apart, and one reveal per new spawn alerted, which is a few an hour.
+The site's terms forbid automated requests beyond what a single human user would generate. The watch stays within that: one search per check, with the watch's own checks never closer than 5 minutes apart and the others started by hand, and one reveal per new spawn alerted, which is a few an hour.
 
 ## Login
 
@@ -39,6 +39,7 @@ The service's catalog is kept as a snapshot in the source snapshots folder, fetc
 
 - The interval is set in the tab, in minutes, and is refused below 5.
 - A check runs when the watch is on and the interval has passed since the last one, plus a random delay of up to 30 seconds.
+- The tab's *Check now* button runs one check at once, whether the watch is on or not, however recent the last check, and whatever wait a 429 asked for. The watch's next check then waits the interval after it. A check never runs while another is running: the button reports it, and the watch skips its wake-up.
 - A search refused for its rate (429) postpones the next check by the wait the service asks for, when that is longer than the interval.
 - The watch runs in a background thread of the application server, started by the first page load after the server starts, and reads its settings at every wake-up, every 30 seconds: turning it off stops the checks without restarting the server.
 

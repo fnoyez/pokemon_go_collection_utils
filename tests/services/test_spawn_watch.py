@@ -1,4 +1,6 @@
 import datetime
+import threading
+import types
 import urllib.error
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import patch
@@ -309,7 +311,7 @@ def test_match_spawns(spawns, expected_matches):
     ] == expected_matches
 
 
-def get_find_first_check_time_test_data():
+def get_find_earliest_check_time_test_data():
     config = spawn_watch_m.WatchConfig(
         is_enabled=True, check_interval_duration=datetime.timedelta(minutes=5)
     )
@@ -346,11 +348,11 @@ def get_find_first_check_time_test_data():
 
 
 @pytest.mark.parametrize(
-    "last_check_time,config,expected_time", get_find_first_check_time_test_data()
+    "last_check_time,config,expected_time", get_find_earliest_check_time_test_data()
 )
-def test_find_first_check_time(last_check_time, config, expected_time):
+def test_find_earliest_check_time(last_check_time, config, expected_time):
     assert (
-        spawn_watch_m.find_first_check_time(last_check_time, config, NOW)
+        spawn_watch_m.find_earliest_check_time(last_check_time, config, NOW)
         == expected_time
     )
 
@@ -580,3 +582,33 @@ def test_delete_old_records_keeps_recent_alerts(tmp_path):
     assert spawn_watch_m.load_alerted_encounter_ids(db_file_path) == {"recent"}
     assert spawn_watch_m.load_last_check_time(db_file_path) == NOW
     assert len(spawn_watch_m.load_recent_checks(db_file_path)) == 1
+
+
+def test_run_spawn_check_unless_busy_skips_while_a_check_runs(tmp_path):
+    cfg = types.SimpleNamespace(db_file_path=tmp_path / "collection.sqlite")
+    check_lock = threading.Lock()
+    check_lock.acquire()
+
+    with patch.object(spawn_watch_m, "run_spawn_check") as run_spawn_check:
+        outcome = spawn_watch_m.run_spawn_check_unless_busy(cfg, check_lock, NOW)
+
+    assert outcome is None
+    run_spawn_check.assert_not_called()
+
+
+def test_run_spawn_check_unless_busy_records_an_unexpected_error(tmp_path):
+    cfg = types.SimpleNamespace(db_file_path=tmp_path / "collection.sqlite")
+    migrate_m.init_db(cfg.db_file_path)
+    check_lock = threading.Lock()
+
+    with patch.object(
+        spawn_watch_m, "run_spawn_check", side_effect=KeyError("species")
+    ):
+        outcome = spawn_watch_m.run_spawn_check_unless_busy(cfg, check_lock, NOW)
+
+    assert outcome == spawn_watch_m.CheckOutcome(spawn_watch_m.CheckStatus.FAILURE)
+    assert [
+        (check["status"], check["note"])
+        for check in spawn_watch_m.load_recent_checks(cfg.db_file_path)
+    ] == [("failure", "KeyError: 'species'")]
+    assert not check_lock.locked()

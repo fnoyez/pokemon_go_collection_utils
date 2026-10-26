@@ -11,7 +11,7 @@ from pokemon_go_collection.services import spawn_watch as spawn_watch_m
 from pokemon_go_collection.sources import discord as discord_m
 
 
-def render_spawn_watch_page(cfg):
+def render_spawn_watch_page(cfg, check_lock):
     st.header("Spawn watch")
     st.caption(
         "While on, the watch searches pogocoordinates.com at the set interval for "
@@ -24,6 +24,7 @@ def render_spawn_watch_page(cfg):
     with discord_column:
         _render_discord_settings(cfg)
     _render_watch_settings(cfg.db_file_path)
+    _render_manual_check(cfg, check_lock)
     _render_watch_records(cfg.db_file_path)
 
 
@@ -117,6 +118,29 @@ def _save_watch_settings(db_file_path):
         st.session_state["watch_is_enabled"],
         datetime.timedelta(minutes=st.session_state["watch_check_interval_minutes_nb"]),
     )
+
+
+def _render_manual_check(cfg, check_lock):
+    if st.button(
+        "Check now",
+        help=(
+            "Checks once, now, whether the watch is on or not and however recent "
+            "the last check; the watch's next check then waits an interval after it."
+        ),
+    ):
+        with st.spinner("Checking..."):
+            outcome = spawn_watch_m.run_spawn_check_unless_busy(
+                cfg, check_lock, datetime.datetime.now(datetime.timezone.utc)
+            )
+        if outcome is None:
+            st.info("A check is already running: its result will show below.")
+        elif outcome.status == spawn_watch_m.CheckStatus.SUCCESS:
+            st.success("Check done.")
+        else:
+            st.error(
+                f"The check ended with the status {outcome.status.value}: see its "
+                "note below."
+            )
 
 
 @st.fragment(run_every=datetime.timedelta(seconds=30))

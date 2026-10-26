@@ -72,11 +72,14 @@ class SpawnMatch:
     coordinates: str | None = None
 
 
-def run_spawn_watch_loop(cfg, stop_event, wake_duration=datetime.timedelta(seconds=30)):
+def run_spawn_watch_loop(
+    cfg, check_lock, stop_event, wake_duration=datetime.timedelta(seconds=30)
+):
     """Run checks while the watch is on, until `stop_event` is set.
 
-    The settings are read at every wake-up. An unexpected error ends the
-    check it happened in, not the loop: the loop is the whole watch.
+    The settings and the last check time are read at every wake-up, so a check
+    started from the tab postpones the next one like any other. `check_lock` is
+    held by the check running, whichever started it.
     """
     next_check_time = None
     while not stop_event.wait(wake_duration.total_seconds()):
@@ -84,23 +87,19 @@ def run_spawn_watch_loop(cfg, stop_event, wake_duration=datetime.timedelta(secon
         if not config.is_enabled:
             continue
         now = datetime.datetime.now(datetime.timezone.utc)
-        if next_check_time is None:
-            next_check_time = find_first_check_time(
-                load_last_check_time(cfg.db_file_path), config, now
-            )
+        earliest_check_time = find_earliest_check_time(
+            load_last_check_time(cfg.db_file_path), config, now
+        )
+        next_check_time = (
+            earliest_check_time
+            if next_check_time is None
+            else max(next_check_time, earliest_check_time)
+        )
         if now < next_check_time:
             continue
-        try:
-            outcome = run_spawn_check(cfg, now)
-        except Exception as error:
-            logger.exception("Spawn check failed")
-            record_check(
-                cfg.db_file_path,
-                now,
-                CheckStatus.FAILURE,
-                note=f"{type(error).__name__}: {error}",
-            )
-            outcome = CheckOutcome(CheckStatus.FAILURE)
+        outcome = run_spawn_check_unless_busy(cfg, check_lock, now)
+        if outcome is None:
+            continue
         wait_duration = max(
             config.check_interval_duration,
             outcome.retry_after_duration or datetime.timedelta(0),
@@ -121,8 +120,8 @@ def load_watch_config(db_file_path):
     )
 
 
-def find_first_check_time(last_check_time, config, now):
-    """Return when the watch checks first: an interval after the last check, at the earliest."""
+def find_earliest_check_time(last_check_time, config, now):
+    """Return when the watch may check next: an interval after the last check, or now."""
     if last_check_time is None:
         return now
     return max(now, last_check_time + config.check_interval_duration)
@@ -141,6 +140,29 @@ def load_last_check_time(db_file_path):
         if last_check_time is None
         else datetime.datetime.fromisoformat(last_check_time)
     )
+
+
+def run_spawn_check_unless_busy(cfg, check_lock, now):
+    """Run a check, unless one is already running; return its outcome, or None.
+
+    An unexpected error ends the check, recorded as failed, rather than its
+    caller: for the loop, that caller is the whole watch.
+    """
+    if not check_lock.acquire(blocking=False):
+        return None
+    try:
+        return run_spawn_check(cfg, now)
+    except Exception as error:
+        logger.exception("Spawn check failed")
+        record_check(
+            cfg.db_file_path,
+            now,
+            CheckStatus.FAILURE,
+            note=f"{type(error).__name__}: {error}",
+        )
+        return CheckOutcome(CheckStatus.FAILURE)
+    finally:
+        check_lock.release()
 
 
 def run_spawn_check(cfg, now, retention_duration=datetime.timedelta(days=7)):

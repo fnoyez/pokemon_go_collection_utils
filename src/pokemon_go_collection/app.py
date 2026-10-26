@@ -31,7 +31,7 @@ def main():
         return
 
     backups_m.run_auto_backup(cfg.db_file_path, cfg.backup_folder_path)
-    _start_spawn_watch(cfg)
+    check_lock = _start_spawn_watch(cfg)
     if refresh_m.is_refresh_due(
         cfg.db_file_path,
         cfg.refresh_period_duration,
@@ -49,24 +49,26 @@ def main():
     with shundos_tab:
         ui_shundos_m.render_shundos_page(cfg.db_file_path, cfg.icons_folder_path)
     with spawn_watch_tab:
-        ui_spawn_watch_m.render_spawn_watch_page(cfg)
+        ui_spawn_watch_m.render_spawn_watch_page(cfg, check_lock)
     with pvp_ranks_tab:
         ui_pvp_ranks_m.render_pvp_ranks_page(cfg.db_file_path)
 
 
 # Cached as a resource, the watch starts once per server process and runs as
 # long as it does. The leading underscore keeps the argument out of the cache key.
+# The lock it returns is held by the check running, from the watch or the tab.
 @st.cache_resource
 def _start_spawn_watch(_cfg):
+    check_lock = threading.Lock()
     stop_event = threading.Event()
     threading.Thread(
         target=spawn_watch_m.run_spawn_watch_loop,
-        args=(_cfg, stop_event),
+        args=(_cfg, check_lock, stop_event),
         name="spawn-watch",
         daemon=True,
     ).start()
     logger.info("Spawn watch started")
-    return stop_event
+    return check_lock
 
 
 def _run_refresh(cfg):

@@ -72,14 +72,14 @@ def main_spawn_check():
     cfg = _load_config(args)
     migrate_m.init_db(cfg.db_file_path, backup_folder_path=cfg.backup_folder_path)
     now = datetime.datetime.now(datetime.timezone.utc)
-    last_check_time = spawn_watch_m.load_last_check_time(cfg.db_file_path)
+    last_search_time = spawn_watch_m.load_last_search_time(cfg.db_file_path)
     if (
-        last_check_time is not None
-        and now - last_check_time < spawn_watch_m.MIN_CHECK_INTERVAL_DURATION
+        last_search_time is not None
+        and now - last_search_time < spawn_watch_m.MIN_CHECK_INTERVAL_DURATION
     ):
         raise SystemExit(
-            f"The last check ran at {last_check_time}: the next one cannot run before "
-            f"{last_check_time + spawn_watch_m.MIN_CHECK_INTERVAL_DURATION}"
+            f"The last search ran at {last_search_time}: the next one cannot run "
+            f"before {last_search_time + spawn_watch_m.MIN_CHECK_INTERVAL_DURATION}"
         )
     outcome = spawn_watch_m.run_spawn_check(cfg, now)
     print(f"Spawn check: {outcome.status.value}")

@@ -1,4 +1,5 @@
 import datetime
+import socket
 import threading
 import types
 import urllib.error
@@ -318,19 +319,19 @@ def get_find_earliest_check_time_test_data():
     test_cases = [
         {
             "id": "never-checked",
-            "last_check_time": None,
+            "last_search_time": None,
             "config": config,
             "expected_time": NOW,
         },
         {
             "id": "last-check-older-than-interval",
-            "last_check_time": NOW - datetime.timedelta(minutes=10),
+            "last_search_time": NOW - datetime.timedelta(minutes=10),
             "config": config,
             "expected_time": NOW,
         },
         {
             "id": "last-check-within-interval",
-            "last_check_time": NOW - datetime.timedelta(minutes=2),
+            "last_search_time": NOW - datetime.timedelta(minutes=2),
             "config": config,
             "expected_time": NOW + datetime.timedelta(minutes=3),
         },
@@ -338,7 +339,7 @@ def get_find_earliest_check_time_test_data():
 
     return [
         pytest.param(
-            test_case["last_check_time"],
+            test_case["last_search_time"],
             test_case["config"],
             test_case["expected_time"],
             id=test_case["id"],
@@ -348,11 +349,11 @@ def get_find_earliest_check_time_test_data():
 
 
 @pytest.mark.parametrize(
-    "last_check_time,config,expected_time", get_find_earliest_check_time_test_data()
+    "last_search_time,config,expected_time", get_find_earliest_check_time_test_data()
 )
-def test_find_earliest_check_time(last_check_time, config, expected_time):
+def test_find_earliest_check_time(last_search_time, config, expected_time):
     assert (
-        spawn_watch_m.find_earliest_check_time(last_check_time, config, NOW)
+        spawn_watch_m.find_earliest_check_time(last_search_time, config, NOW)
         == expected_time
     )
 
@@ -580,7 +581,7 @@ def test_delete_old_records_keeps_recent_alerts(tmp_path):
     spawn_watch_m.delete_old_records(db_file_path, NOW - datetime.timedelta(days=7))
 
     assert spawn_watch_m.load_alerted_encounter_ids(db_file_path) == {"recent"}
-    assert spawn_watch_m.load_last_check_time(db_file_path) == NOW
+    assert spawn_watch_m.load_last_search_time(db_file_path) == NOW
     assert len(spawn_watch_m.load_recent_checks(db_file_path)) == 1
 
 
@@ -612,3 +613,56 @@ def test_run_spawn_check_unless_busy_records_an_unexpected_error(tmp_path):
         for check in spawn_watch_m.load_recent_checks(cfg.db_file_path)
     ] == [("failure", "KeyError: 'species'")]
     assert not check_lock.locked()
+
+
+def test_run_spawn_check_records_a_search_without_network_apart(tmp_path):
+    cfg = make_check_cfg(tmp_path)
+    error = urllib.error.URLError(
+        socket.gaierror(-3, "Temporary failure in name resolution")
+    )
+
+    with (
+        patch.object(spawn_watch_m, "load_service_forms", return_value=SERVICE_FORMS),
+        patch.object(pogocoordinates_m, "search_spawns", side_effect=error),
+    ):
+        outcome = spawn_watch_m.run_spawn_check(cfg, NOW)
+
+    assert outcome == spawn_watch_m.CheckOutcome(
+        spawn_watch_m.CheckStatus.NETWORK_UNAVAILABLE
+    )
+    assert [
+        check["status"] for check in spawn_watch_m.load_recent_checks(cfg.db_file_path)
+    ] == ["network_unavailable"]
+
+
+def make_check_cfg(folder_path):
+    """Return the settings of a check, logged in and with a webhook set."""
+    cfg = types.SimpleNamespace(
+        db_file_path=folder_path / "collection.sqlite",
+        pogocoordinates_token_file_path=folder_path / "token",
+        discord_webhook_url_file_path=folder_path / "webhook_url",
+        sources_folder_path=folder_path,
+    )
+    migrate_m.init_db(cfg.db_file_path)
+    cfg.pogocoordinates_token_file_path.write_text("token", encoding="utf-8")
+    cfg.discord_webhook_url_file_path.write_text(
+        "https://discord.example/webhook", encoding="utf-8"
+    )
+    return cfg
+
+
+def test_load_last_search_time_skips_the_checks_without_network(tmp_path):
+    db_file_path = tmp_path / "collection.sqlite"
+    migrate_m.init_db(db_file_path)
+    spawn_watch_m.record_check(
+        db_file_path,
+        NOW - datetime.timedelta(minutes=5),
+        spawn_watch_m.CheckStatus.FAILURE,
+    )
+    spawn_watch_m.record_check(
+        db_file_path, NOW, spawn_watch_m.CheckStatus.NETWORK_UNAVAILABLE
+    )
+
+    assert spawn_watch_m.load_last_search_time(
+        db_file_path
+    ) == NOW - datetime.timedelta(minutes=5)

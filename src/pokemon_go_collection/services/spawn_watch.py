@@ -17,6 +17,7 @@ from pokemon_go_collection import secret_files as secret_files_m
 from pokemon_go_collection.services import hunt_list as hunt_list_m
 from pokemon_go_collection.services import shundos as shundos_m
 from pokemon_go_collection.sources import discord as discord_m
+from pokemon_go_collection.sources import http as http_m
 from pokemon_go_collection.sources import pogocoordinates as pogocoordinates_m
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,8 @@ class CheckStatus(enum.Enum):
     FAILURE = "failure"
     RATE_LIMITED = "rate_limited"
     UNAUTHORIZED = "unauthorized"
+    # The search failed before reaching the service, for want of a network.
+    NETWORK_UNAVAILABLE = "network_unavailable"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -73,13 +76,19 @@ class SpawnMatch:
 
 
 def run_spawn_watch_loop(
-    cfg, check_lock, stop_event, wake_duration=datetime.timedelta(seconds=30)
+    cfg,
+    check_lock,
+    stop_event,
+    wake_duration=datetime.timedelta(seconds=30),
+    retry_duration=datetime.timedelta(minutes=1),
 ):
     """Run checks while the watch is on, until `stop_event` is set.
 
-    The settings and the last check time are read at every wake-up, so a check
+    The settings and the last search time are read at every wake-up, so a check
     started from the tab postpones the next one like any other. `check_lock` is
-    held by the check running, whichever started it.
+    held by the check running, whichever started it. A check whose search did
+    not reach the service is tried again after `retry_duration`: it adds no
+    search to those the service sees.
     """
     next_check_time = None
     while not stop_event.wait(wake_duration.total_seconds()):
@@ -88,7 +97,7 @@ def run_spawn_watch_loop(
             continue
         now = datetime.datetime.now(datetime.timezone.utc)
         earliest_check_time = find_earliest_check_time(
-            load_last_check_time(cfg.db_file_path), config, now
+            load_last_search_time(cfg.db_file_path), config, now
         )
         next_check_time = (
             earliest_check_time
@@ -100,10 +109,13 @@ def run_spawn_watch_loop(
         outcome = run_spawn_check_unless_busy(cfg, check_lock, now)
         if outcome is None:
             continue
-        wait_duration = max(
-            config.check_interval_duration,
-            outcome.retry_after_duration or datetime.timedelta(0),
-        )
+        if outcome.status == CheckStatus.NETWORK_UNAVAILABLE:
+            wait_duration = retry_duration
+        else:
+            wait_duration = max(
+                config.check_interval_duration,
+                outcome.retry_after_duration or datetime.timedelta(0),
+            )
         next_check_time = now + wait_duration + _draw_jitter_duration()
 
 
@@ -120,25 +132,28 @@ def load_watch_config(db_file_path):
     )
 
 
-def find_earliest_check_time(last_check_time, config, now):
-    """Return when the watch may check next: an interval after the last check, or now."""
-    if last_check_time is None:
+def find_earliest_check_time(last_search_time, config, now):
+    """Return when the watch may check next: an interval after the last search, or now."""
+    if last_search_time is None:
         return now
-    return max(now, last_check_time + config.check_interval_duration)
+    return max(now, last_search_time + config.check_interval_duration)
 
 
-def load_last_check_time(db_file_path):
+def load_last_search_time(db_file_path):
+    """Return the time of the last check whose search may have reached the service."""
     with db_m.db_conn(db_file_path) as conn:
-        (last_check_time,) = conn.execute(
+        (last_search_time,) = conn.execute(
             """
             SELECT MAX(check_time)
             FROM spawn_check
-            """
+            WHERE status != ?
+            """,
+            (CheckStatus.NETWORK_UNAVAILABLE.value,),
         ).fetchone()
     return (
         None
-        if last_check_time is None
-        else datetime.datetime.fromisoformat(last_check_time)
+        if last_search_time is None
+        else datetime.datetime.fromisoformat(last_search_time)
     )
 
 
@@ -191,8 +206,13 @@ def run_spawn_check(cfg, now, retention_duration=datetime.timedelta(days=7)):
         record_check(cfg.db_file_path, now, CheckStatus.RATE_LIMITED, note=str(error))
         return CheckOutcome(CheckStatus.RATE_LIMITED, error.retry_after_duration)
     except (urllib.error.URLError, TimeoutError) as error:
-        record_check(cfg.db_file_path, now, CheckStatus.FAILURE, note=str(error))
-        return CheckOutcome(CheckStatus.FAILURE)
+        status = (
+            CheckStatus.NETWORK_UNAVAILABLE
+            if http_m.is_unsent_request_error(error)
+            else CheckStatus.FAILURE
+        )
+        record_check(cfg.db_file_path, now, status, note=str(error))
+        return CheckOutcome(status)
 
     matches = match_spawns(spawns, hunt_targets, service_forms, now)
     alerted_encounter_ids = load_alerted_encounter_ids(cfg.db_file_path)

@@ -1,7 +1,9 @@
-// Ownership the user asked for since the page was loaded, by entry identifier.
+// Each grid's ownership the user asked for since the page was loaded, by entry
+// identifier, keyed by the grid's root element: the module is shared by every
+// grid of the page, and each board takes the clicks on its own grid only.
 // Sent to Python in full at each click, so a click whose event is coalesced
 // with the next one is not lost.
-const desiredOwnership = {};
+const desiredOwnershipByRoot = new WeakMap();
 
 const MARKABLE_STATES = new Set(["missing", "owned"]);
 
@@ -13,8 +15,12 @@ export default function (component) {
     root = document.createElement("div");
     root.className = "pokemon-grid-root";
     parentElement.appendChild(root);
+    desiredOwnershipByRoot.set(root, {});
   }
-  root.replaceChildren(...data.groups.map((group) => renderGroup(group, data.icon_base_url)));
+  const desiredOwnership = desiredOwnershipByRoot.get(root);
+  root.replaceChildren(
+    ...data.groups.map((group) => renderGroup(group, data.icon_base_url, desiredOwnership)),
+  );
 
   root.onclick = (event) => {
     const tile = event.target.closest(".tile.markable");
@@ -28,7 +34,7 @@ export default function (component) {
   };
 }
 
-function renderGroup(group, iconBaseUrl) {
+function renderGroup(group, iconBaseUrl, desiredOwnership) {
   const groupElement = document.createElement("section");
 
   const header = document.createElement("div");
@@ -45,13 +51,13 @@ function renderGroup(group, iconBaseUrl) {
     }
     const tiles = document.createElement("div");
     tiles.className = "tiles";
-    tiles.append(...section.entries.map((entry) => renderTile(entry, iconBaseUrl)));
+    tiles.append(...section.entries.map((entry) => renderTile(entry, iconBaseUrl, desiredOwnership)));
     groupElement.appendChild(tiles);
   }
   return groupElement;
 }
 
-function renderTile(entry, iconBaseUrl) {
+function renderTile(entry, iconBaseUrl, desiredOwnership) {
   const tile = document.createElement("div");
   tile.dataset.entryId = entry.id;
   tile.title = `#${entry.dex} ${entry.name}`;

@@ -1,7 +1,10 @@
 import concurrent.futures
+import io
 import logging
 import shutil
 import urllib.error
+
+from PIL import Image
 
 from pokemon_go_collection import catalog as catalog_m
 from pokemon_go_collection.sources import http as http_m
@@ -159,7 +162,21 @@ def _ensure_costumed_pokemon_icon(
                 f"{'.s' if is_shiny else ''}.icon.png"
             )
             if content is not None:
-                icon_file_path.write_bytes(content)
+                icon_file_path.write_bytes(crop_icon_to_content(content))
                 return file_name
     logger.warning(f"No icon found for {costumed_pokemon.costumed_pokemon_id}")
     return None
+
+
+def crop_icon_to_content(content):
+    """Return the PNG icon `content` with its transparent margins cropped.
+
+    A LeekDuck icon carries wide margins (see docs/data_sources.md, *Overview*)
+    and a pogo_assets one none: cropped alike, the icons of both sources show
+    the Pokémon at the same size.
+    """
+    image = Image.open(io.BytesIO(content))
+    bounding_box = image.convert("RGBA").getchannel("A").getbbox()
+    output = io.BytesIO()
+    image.crop(bounding_box).save(output, format="PNG")
+    return output.getvalue()

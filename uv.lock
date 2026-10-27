@@ -1381,6 +1381,7 @@ dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pandas" },
+    { name = "pillow" },
     { name = "playwright" },
     { name = "streamlit" },
     { name = "timezonefinder" },
@@ -1397,6 +1398,7 @@ dev = [
 requires-dist = [
     { name = "numpy", specifier = ">=2.4.6,<3" },
     { name = "pandas", specifier = ">=3.0.6,<4" },
+    { name = "pillow", specifier = ">=12.3.0,<13" },
     { name = "playwright", specifier = ">=1.55,<2" },
     { name = "streamlit", specifier = ">=1.57.0,<2" },
     { name = "timezonefinder", specifier = ">=8,<9" },

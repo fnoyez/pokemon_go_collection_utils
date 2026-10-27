@@ -17,8 +17,6 @@ A local application to record and monitor the state of a Pokémon GO collection,
 
 - [uv](https://docs.astral.sh/uv/).
 - Google Chrome, for logging in to pogocoordinates.com from the Spawn watch tab.
-- The [`game_masters`](https://github.com/PokeMiners/game_masters) repository cloned next to this one, as `../game_masters`.
-- The [`pogo_assets`](https://github.com/PokeMiners/pogo_assets) repository cloned next to this one, as `../pogo_assets`.
 
 ## Running
 

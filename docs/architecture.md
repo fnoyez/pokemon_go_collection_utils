@@ -17,7 +17,7 @@
 - `src/pokemon_go_collection/db.py` — connection helpers.
 - `src/pokemon_go_collection/migrate.py` and `migrations/` — the migration runner and the schema.
 - `src/pokemon_go_collection/regions.py` — the regions and the National Pokédex numbers each introduced.
-- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `pogo_assets.py`, `bulbapedia.py`, `masterfile.py`, `overrides.py`, `icons.py`, `pogocoordinates.py`, `discord.py`; `http.py`, the download helper they share, and `git_repository.py`, the pull of the sibling repositories.
+- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `uicons.py`, `bulbapedia.py`, `masterfile.py`, `overrides.py`, `icons.py`, `pogocoordinates.py`, `discord.py`; `http.py`, the download helper they share.
 - `src/pokemon_go_collection/pvp_ranks.py` — the PvP rank computation of [pvp_ranks.md](pvp_ranks.md), pure functions over base stats and CP multipliers.
 - `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
 - `src/pokemon_go_collection/costumes.py` — merges the sources' records into the costumed Pokémon, following [costumes.md](costumes.md); pure functions over records, like `catalog.py`.
@@ -38,7 +38,6 @@
 - Source snapshots: `~/.pokemon_go_collection/sources/`, the last successfully fetched copy of each downloaded source.
 - Backup folder: `/home/pavel/Data/Projects/data/.pokemon_go_collection_db_backup`.
 - Icon cache: `static/icons/` in the repository, ignored by git. Streamlit serves files only from a `static` folder next to the script it runs, so the cache lives there rather than in the application home; it holds nothing that a refresh cannot download again.
-- Game master and pogo_assets repositories: `../game_masters` and `../pogo_assets`, next to this repository.
 - Spawn watch login profile and secrets: see [spawn_watch.md](spawn_watch.md), *Storage*.
 
 Paths are validated at startup, and the application stops with an error when one is invalid. The backup folder has to exist beforehand.
@@ -69,12 +68,11 @@ The SQLite backup API copies the database while the application runs, one automa
 
 A refresh brings the catalog up to date with its sources:
 
-1. Pull the game master and pogo_assets repositories (`git pull --ff-only`).
-2. Download the PvPoke game master, the LeekDuck shiny data, Bulbapedia's list of event Pokémon and the Masterfile-Generator's numbers, replacing their snapshots.
-3. Rebuild the catalog and the costumed Pokémon from the sources. A Bulbapedia sprite `data/costume_matches.csv` has no line for, or a line standing for no sprite, adds a warning.
-4. Download the icons missing from the cache; a costumed Pokémon's comes from the pogo_assets clone, or else from LeekDuck.
-5. Write the catalog, with each entry's icon and base stats, to `POKEMON_ENTRY`, the Mega and Primal evolutions to `TEMPORARY_EVOLUTION`, the battle forms to `BATTLE_FORM`, the CP multipliers to `CP_MULTIPLIER`, and the costumed Pokémon to `COSTUMED_POKEMON` and `COSTUMED_POKEMON_EVOLUTION`, in one transaction.
-6. Record the refresh in `CATALOG_REFRESH`.
+1. Download the game master, the UICONS index, the PvPoke game master, the LeekDuck shiny data, Bulbapedia's list of event Pokémon and the Masterfile-Generator's numbers, replacing their snapshots.
+2. Rebuild the catalog and the costumed Pokémon from the sources. A Bulbapedia sprite `data/costume_matches.csv` has no line for, or a line standing for no sprite, adds a warning.
+3. Download the icons missing from the cache, from UICONS.
+4. Write the catalog, with each entry's icon and base stats, to `POKEMON_ENTRY`, the Mega and Primal evolutions to `TEMPORARY_EVOLUTION`, the battle forms to `BATTLE_FORM`, the CP multipliers to `CP_MULTIPLIER`, and the costumed Pokémon to `COSTUMED_POKEMON` and `COSTUMED_POKEMON_EVOLUTION`, in one transaction.
+5. Record the refresh in `CATALOG_REFRESH`.
 
 A source that cannot be reached (no network, a site down) leaves its last snapshot in use, and the refresh records a warning; a refresh with no snapshot at all to fall back on fails.
 

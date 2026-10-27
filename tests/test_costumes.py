@@ -9,7 +9,7 @@ from pokemon_go_collection.sources import leekduck as leekduck_m
 from pokemon_go_collection.sources import masterfile as masterfile_m
 from pokemon_go_collection.sources import national_dex as national_dex_m
 from pokemon_go_collection.sources import overrides as overrides_m
-from pokemon_go_collection.sources import pogo_assets as pogo_assets_m
+from pokemon_go_collection.sources import uicons as uicons_m
 
 HOLIDAY_2017 = bulbapedia_m.Event(
     title="Holiday 2017",
@@ -243,16 +243,62 @@ def test_build_costume_catalog_merges_the_sources():
         timestamp=datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
     )
     icons = [
-        pogo_assets_m.parse_icon_file_name(file_name)
-        for file_name in [
-            "pm25.icon.png",
-            "pm25.cHOLIDAY_2016.icon.png",
-            "pm25.cHOLIDAY_2016.s.icon.png",
-            "pm25.cHOLIDAY_2016.g2.icon.png",
-            "pm25.fCOPY_2019.icon.png",
-            "pm25.cFEB_2019.icon.png",
-            "pm25.cFEB_2019.s.icon.png",
-        ]
+        uicons_m.Icon(
+            file_name="25.png",
+            dex_number=25,
+            form_id="PIKACHU_NORMAL",
+            costume=None,
+            is_female=False,
+            is_shiny=False,
+        ),
+        uicons_m.Icon(
+            file_name="25_c1.png",
+            dex_number=25,
+            form_id="PIKACHU_NORMAL",
+            costume="HOLIDAY_2016",
+            is_female=False,
+            is_shiny=False,
+        ),
+        uicons_m.Icon(
+            file_name="25_c1_s.png",
+            dex_number=25,
+            form_id="PIKACHU_NORMAL",
+            costume="HOLIDAY_2016",
+            is_female=False,
+            is_shiny=True,
+        ),
+        uicons_m.Icon(
+            file_name="25_c1_g2.png",
+            dex_number=25,
+            form_id="PIKACHU_NORMAL",
+            costume="HOLIDAY_2016",
+            is_female=True,
+            is_shiny=False,
+        ),
+        uicons_m.Icon(
+            file_name="25_f2000.png",
+            dex_number=25,
+            form_id="PIKACHU_COPY_2019",
+            costume=None,
+            is_female=False,
+            is_shiny=False,
+        ),
+        uicons_m.Icon(
+            file_name="25_c9.png",
+            dex_number=25,
+            form_id="PIKACHU_NORMAL",
+            costume="FEB_2019",
+            is_female=False,
+            is_shiny=False,
+        ),
+        uicons_m.Icon(
+            file_name="25_c9_s.png",
+            dex_number=25,
+            form_id="PIKACHU_NORMAL",
+            costume="FEB_2019",
+            is_female=False,
+            is_shiny=True,
+        ),
     ]
     shiny_releases = [
         leekduck_m.ShinyRelease(
@@ -366,11 +412,7 @@ def test_build_costume_catalog_merges_the_sources():
             name="Pikachu (Holiday Hat)",
             release_date=datetime.date(2016, 12, 12),
             shiny_release_date=datetime.date(2016, 12, 25),
-            pogo_assets_icon_file_names=(
-                "pm25.cHOLIDAY_2016.icon.png",
-                "pm25.cHOLIDAY_2016.s.icon.png",
-            ),
-            leekduck_asset_name="pm25.cHOLIDAY_2016",
+            icon_file_names=("25_c1.png", "25_c1_s.png"),
             bulbapedia_codes=("Holiday2016",),
             costume_year=2016,
             game_order=(598, 1),
@@ -381,11 +423,7 @@ def test_build_costume_catalog_merges_the_sources():
             name="Pikachu (Feb 2019)",
             release_date=None,
             shiny_release_date=None,
-            pogo_assets_icon_file_names=(
-                "pm25.cFEB_2019.icon.png",
-                "pm25.cFEB_2019.s.icon.png",
-            ),
-            leekduck_asset_name=None,
+            icon_file_names=("25_c9.png", "25_c9_s.png"),
             bulbapedia_codes=(),
             costume_year=2019,
             game_order=(598, 9),
@@ -396,8 +434,7 @@ def test_build_costume_catalog_merges_the_sources():
             name="Pikachu (Mimikyu Costume)",
             release_date=None,
             shiny_release_date=datetime.date(2019, 10, 17),
-            pogo_assets_icon_file_names=None,
-            leekduck_asset_name="pm25.fFALL_2019",
+            icon_file_names=None,
             bulbapedia_codes=(),
             costume_year=2019,
             game_order=(894, 0),
@@ -408,8 +445,7 @@ def test_build_costume_catalog_merges_the_sources():
             name="Pikachu (Clone)",
             release_date=datetime.date(2020, 2, 25),
             shiny_release_date=None,
-            pogo_assets_icon_file_names=("pm25.fCOPY_2019.icon.png", None),
-            leekduck_asset_name=None,
+            icon_file_names=("25_f2000.png", None),
             bulbapedia_codes=("Copy2019",),
             costume_year=2019,
             game_order=None,
@@ -420,8 +456,7 @@ def test_build_costume_catalog_merges_the_sources():
             name="Zubat (Top hat)",
             release_date=datetime.date(2026, 10, 27),
             shiny_release_date=None,
-            pogo_assets_icon_file_names=None,
-            leekduck_asset_name=None,
+            icon_file_names=None,
             bulbapedia_codes=("TopHat",),
             costume_year=None,
             game_order=None,
@@ -517,11 +552,6 @@ def get_find_game_order_test_data():
             "id": "costume-on-the-species",
             "key": costumes_m.CostumedPokemonKey(25, None, "HOLIDAY_2016"),
             "expected_output": (598, 1),
-        },
-        {
-            "id": "costume-in-lowercase",
-            "key": costumes_m.CostumedPokemonKey(25, None, "May_2023"),
-            "expected_output": (598, 68),
         },
         {
             "id": "costume-form",

@@ -14,11 +14,9 @@ The costume forms are those the game master flags `isCostume`, and those `data/c
 
 ## The sources merged
 
-- **pogo_assets** gives the costumed Pokémon it has an icon of, with its normal icon and, unless it cannot be shiny, its shiny one. The female icons are left out.
+- **UICONS** gives the costumed Pokémon it has an icon of, with its normal icon and, unless it cannot be shiny, its shiny one. Its numbers are turned into the game's names through the Masterfile-Generator, an icon of a form or costume it does not number being left out, and the female icons are left out too.
 - **LeekDuck** gives the costumed Pokémon it lists a shiny of, with that shiny's date and an English label.
 - **Bulbapedia** gives the costumed Pokémon of its list of event Pokémon, through `data/costume_matches.csv`, with the events each appeared in.
-
-Costume names are compared in uppercase, since pogo_assets writes some in lowercase (`May_2023`).
 
 ### `data/costume_matches.csv`
 
@@ -46,7 +44,7 @@ They are ordered as the game's inventory sorts them by *Number*: by National Pok
 
 ## Maintaining the matches
 
-`scripts/report_costume_catalog.py` pulls the repositories, fetches LeekDuck and Bulbapedia, writes the costumed Pokémon to a CSV file and prints how the sources cover them:
+`scripts/report_costume_catalog.py` fetches the game master, UICONS, LeekDuck and Bulbapedia, writes the costumed Pokémon to a CSV file and prints how the sources cover them:
 
 ```bash
 uv run python scripts/report_costume_catalog.py --output-file-path costumed_pokemons.csv
@@ -56,5 +54,5 @@ The report lists what calls for a change to `data/costume_matches.csv`:
 
 - **Bulbapedia sprites without a line**: a costume new to Bulbapedia, to match.
 - **Lines standing for no Bulbapedia sprite**: a sprite Bulbapedia renamed or removed.
-- **Costumed Pokémon named by Bulbapedia only**: once pogo_assets or LeekDuck names one, its line takes the game's name.
+- **Costumed Pokémon named by Bulbapedia only**: once the game master, UICONS or LeekDuck names one, its line takes the game's name.
 - **Costumed Pokémon in no Bulbapedia event**, unreleasable or not released yet: those found only in the game's files, and those a source names differently from the line matching them, which then needs the new name.

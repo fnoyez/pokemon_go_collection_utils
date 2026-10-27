@@ -54,3 +54,53 @@ def test_parse_game_master_reads_the_temporary_evolutions_having_stats():
         game_master_m.TemporaryEvolution("MEGA_X", (273, 213, 186)),
         game_master_m.TemporaryEvolution("MEGA_Y", (319, 212, 186)),
     )
+
+
+def test_parse_game_master_names_the_forms_given_by_their_number():
+    stats = {"baseStamina": 120, "baseAttack": 83, "baseDefense": 73}
+    templates = [
+        {
+            "templateId": "FORMS_V0041_POKEMON_ZUBAT",
+            "data": {
+                "formSettings": {
+                    "pokemon": "ZUBAT",
+                    "forms": [
+                        {"form": "ZUBAT_NORMAL"},
+                        {"form": 3362, "isCostume": True},
+                    ],
+                }
+            },
+        },
+        {
+            "templateId": "V0041_POKEMON_ZUBAT_HALLOWEEN_2026_01",
+            "data": {
+                "pokemonSettings": {
+                    "pokemonId": "ZUBAT",
+                    "form": 3362,
+                    "type": "POKEMON_TYPE_POISON",
+                    "stats": stats,
+                    "evolutionBranch": [{"evolution": "GOLBAT", "form": 3363}],
+                }
+            },
+        },
+        {
+            "templateId": "V0042_POKEMON_GOLBAT_HALLOWEEN_2026_01",
+            "data": {
+                "pokemonSettings": {
+                    "pokemonId": "GOLBAT",
+                    "form": 3363,
+                    "type": "POKEMON_TYPE_POISON",
+                    "stats": stats,
+                }
+            },
+        },
+    ]
+
+    game_master = game_master_m.parse_game_master(templates, TIMESTAMP)
+
+    assert game_master.costume_form_ids == frozenset({"ZUBAT_HALLOWEEN_2026_01"})
+    assert [form.form_id for form in game_master.forms] == [
+        "ZUBAT_HALLOWEEN_2026_01",
+        "GOLBAT_HALLOWEEN_2026_01",
+    ]
+    assert game_master.forms[0].evolutions == (("GOLBAT", "GOLBAT_HALLOWEEN_2026_01"),)

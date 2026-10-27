@@ -11,15 +11,14 @@ from pokemon_go_collection import pvp_ranks as pvp_ranks_m
 from pokemon_go_collection import regions as regions_m
 from pokemon_go_collection.sources import bulbapedia as bulbapedia_m
 from pokemon_go_collection.sources import game_master as game_master_m
-from pokemon_go_collection.sources import git_repository as git_repository_m
 from pokemon_go_collection.sources import http as http_m
 from pokemon_go_collection.sources import icons as icons_m
 from pokemon_go_collection.sources import leekduck as leekduck_m
 from pokemon_go_collection.sources import masterfile as masterfile_m
 from pokemon_go_collection.sources import national_dex as national_dex_m
 from pokemon_go_collection.sources import overrides as overrides_m
-from pokemon_go_collection.sources import pogo_assets as pogo_assets_m
 from pokemon_go_collection.sources import pvpoke as pvpoke_m
+from pokemon_go_collection.sources import uicons as uicons_m
 
 logger = logging.getLogger(__name__)
 
@@ -69,15 +68,21 @@ def run_refresh(cfg, now):
     warnings = []
     game_master_timestamp = None
     try:
-        for repository_folder_path in (
-            cfg.game_master_repository_folder_path,
-            cfg.pogo_assets_repository_folder_path,
-        ):
-            pull_error_message = git_repository_m.pull_repository(
-                repository_folder_path
-            )
-            if pull_error_message is not None:
-                warnings.append(pull_error_message)
+        game_master_content = fetch_source_snapshot(
+            game_master_m.GAME_MASTER_URL,
+            cfg.sources_folder_path / "game_master.json",
+            warnings,
+        )
+        game_master_timestamp_content = fetch_source_snapshot(
+            game_master_m.TIMESTAMP_URL,
+            cfg.sources_folder_path / "game_master_timestamp.json",
+            warnings,
+        )
+        uicons_index_content = fetch_source_snapshot(
+            uicons_m.UICONS_INDEX_URL,
+            cfg.sources_folder_path / "uicons_index.json",
+            warnings,
+        )
         pvpoke_content = fetch_source_snapshot(
             pvpoke_m.PVPOKE_GAME_MASTER_URL,
             cfg.sources_folder_path / "pvpoke_game_master.json",
@@ -100,8 +105,9 @@ def run_refresh(cfg, now):
         )
 
         game_master = game_master_m.load_game_master(
-            cfg.game_master_repository_folder_path
+            game_master_content, game_master_timestamp_content
         )
+        game_numbers = masterfile_m.parse_masterfile(masterfile_content)
         game_master_timestamp = game_master.timestamp.isoformat()
         national_dex_species = national_dex_m.load_national_dex(
             cfg.data_folder_path / "national_dex.csv"
@@ -124,24 +130,20 @@ def run_refresh(cfg, now):
             national_dex_species,
             game_master,
             form_overrides,
-            pogo_assets_m.list_icons(cfg.pogo_assets_repository_folder_path),
+            uicons_m.parse_index(uicons_index_content, game_numbers),
             shiny_releases,
             bulbapedia_m.parse_event_pokemon(bulbapedia_content.decode("utf-8")),
             overrides_m.load_costume_matches(
                 cfg.data_folder_path / "costume_matches.csv"
             ),
-            masterfile_m.parse_masterfile(masterfile_content),
+            game_numbers,
         )
         warnings.extend(build_costume_match_warnings(costume_catalog))
         icon_file_names = icons_m.download_missing_icons(
-            entries, cfg.icons_folder_path, now.date()
+            entries, game_numbers, cfg.icons_folder_path, now.date()
         )
         costumed_pokemon_icon_file_names = icons_m.ensure_costumed_pokemon_icons(
-            costume_catalog.costumed_pokemons,
-            cfg.pogo_assets_repository_folder_path
-            / pogo_assets_m.ICONS_FOLDER_RELATIVE_PATH,
-            cfg.icons_folder_path,
-            now.date(),
+            costume_catalog.costumed_pokemons, cfg.icons_folder_path, now.date()
         )
         with db_m.db_conn(cfg.db_file_path) as conn:
             write_catalog(conn, entries, icon_file_names)

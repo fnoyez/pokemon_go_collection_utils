@@ -58,7 +58,7 @@ class CatalogEntry:
     # The game master forms the entry stands for, its representative form first.
     form_ids: tuple[str, ...]
     # The suffix of each of those forms (None for the species itself), which
-    # is how LeekDuck and the icons name a form.
+    # is how LeekDuck names a form.
     form_suffixes: tuple[str | None, ...]
     region: regions_m.Region
     is_variant: bool

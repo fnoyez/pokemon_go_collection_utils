@@ -1,8 +1,8 @@
 """Build the costumed Pokémon from their sources, and report how the sources cover them.
 
-Pulls the game master and pogo_assets repositories, fetches LeekDuck's shiny
-data, Bulbapedia's list of event Pokémon and the masterfile's numbers, prints the report and writes the
-costumed Pokémon to a CSV file:
+Fetches the game master, the UICONS index, LeekDuck's shiny data, Bulbapedia's
+list of event Pokémon and the masterfile's numbers, prints the report and writes
+the costumed Pokémon to a CSV file:
 
     uv run python scripts/report_costume_catalog.py --output-file-path costumed_pokemons.csv
 """
@@ -20,12 +20,11 @@ from pokemon_go_collection import logging_setup as logging_setup_m
 from pokemon_go_collection.services import refresh as refresh_m
 from pokemon_go_collection.sources import bulbapedia as bulbapedia_m
 from pokemon_go_collection.sources import game_master as game_master_m
-from pokemon_go_collection.sources import git_repository as git_repository_m
 from pokemon_go_collection.sources import leekduck as leekduck_m
 from pokemon_go_collection.sources import masterfile as masterfile_m
 from pokemon_go_collection.sources import national_dex as national_dex_m
 from pokemon_go_collection.sources import overrides as overrides_m
-from pokemon_go_collection.sources import pogo_assets as pogo_assets_m
+from pokemon_go_collection.sources import uicons as uicons_m
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +44,21 @@ def main():
         config_m.REPOSITORY_FOLDER_PATH,
     )
     warnings = []
-    for repository_folder_path in (
-        cfg.game_master_repository_folder_path,
-        cfg.pogo_assets_repository_folder_path,
-    ):
-        pull_error_message = git_repository_m.pull_repository(repository_folder_path)
-        if pull_error_message is not None:
-            warnings.append(pull_error_message)
+    game_master_content = refresh_m.fetch_source_snapshot(
+        game_master_m.GAME_MASTER_URL,
+        cfg.sources_folder_path / "game_master.json",
+        warnings,
+    )
+    game_master_timestamp_content = refresh_m.fetch_source_snapshot(
+        game_master_m.TIMESTAMP_URL,
+        cfg.sources_folder_path / "game_master_timestamp.json",
+        warnings,
+    )
+    uicons_index_content = refresh_m.fetch_source_snapshot(
+        uicons_m.UICONS_INDEX_URL,
+        cfg.sources_folder_path / "uicons_index.json",
+        warnings,
+    )
     leekduck_content = refresh_m.fetch_source_snapshot(
         leekduck_m.LEEKDUCK_SHINY_DATA_URL,
         cfg.sources_folder_path / "leekduck_shiny_data.json",
@@ -70,15 +77,18 @@ def main():
     for warning in warnings:
         logger.warning(warning)
 
+    game_numbers = masterfile_m.parse_masterfile(masterfile_content)
     costume_catalog = costumes_m.build_costume_catalog(
         national_dex_m.load_national_dex(cfg.data_folder_path / "national_dex.csv"),
-        game_master_m.load_game_master(cfg.game_master_repository_folder_path),
+        game_master_m.load_game_master(
+            game_master_content, game_master_timestamp_content
+        ),
         overrides_m.load_form_overrides(cfg.data_folder_path / "form_overrides.csv"),
-        pogo_assets_m.list_icons(cfg.pogo_assets_repository_folder_path),
+        uicons_m.parse_index(uicons_index_content, game_numbers),
         leekduck_m.parse_shiny_data(leekduck_content),
         bulbapedia_m.parse_event_pokemon(bulbapedia_content.decode("utf-8")),
         overrides_m.load_costume_matches(cfg.data_folder_path / "costume_matches.csv"),
-        masterfile_m.parse_masterfile(masterfile_content),
+        game_numbers,
     )
     write_costumed_pokemons(
         pathlib.Path(args.output_file_path), costume_catalog.costumed_pokemons
@@ -95,8 +105,7 @@ def write_costumed_pokemons(file_path, costumed_pokemons):
                 "name",
                 "release_date",
                 "shiny_release_date",
-                "pogo_assets_icon",
-                "leekduck_asset_name",
+                "icon",
                 "bulbapedia_codes",
                 "game_order",
             ]
@@ -108,8 +117,7 @@ def write_costumed_pokemons(file_path, costumed_pokemons):
                     costumed_pokemon.name,
                     costumed_pokemon.release_date or "",
                     costumed_pokemon.shiny_release_date or "",
-                    (costumed_pokemon.pogo_assets_icon_file_names or ("",))[0],
-                    costumed_pokemon.leekduck_asset_name or "",
+                    (costumed_pokemon.icon_file_names or ("",))[0],
                     " ".join(costumed_pokemon.bulbapedia_codes),
                     " ".join(str(n) for n in costumed_pokemon.game_order or ()),
                 ]
@@ -128,9 +136,7 @@ def build_report(costume_catalog, today):
         f"- announced: {count(costumed_pokemons, lambda c: c.release_date is not None and c.release_date > today)}",
         f"- in no Bulbapedia event: {count(costumed_pokemons, lambda c: c.release_date is None)}",
         f"- shiny released: {count(costumed_pokemons, lambda c: c.shiny_release_date is not None and c.shiny_release_date <= today)}",
-        f"- with a pogo_assets icon: {count(costumed_pokemons, lambda c: c.pogo_assets_icon_file_names is not None)}",
-        f"- with a LeekDuck icon only: {count(costumed_pokemons, lambda c: c.pogo_assets_icon_file_names is None and c.leekduck_asset_name is not None)}",
-        f"- with no icon: {count(costumed_pokemons, lambda c: c.pogo_assets_icon_file_names is None and c.leekduck_asset_name is None)}",
+        f"- with no icon: {count(costumed_pokemons, lambda c: c.icon_file_names is None)}",
         f"- unnumbered by the masterfile: {count(costumed_pokemons, lambda c: c.game_order is None)}",
         "",
         "Sources holding each costumed Pokémon:",
@@ -182,9 +188,10 @@ def build_report(costume_catalog, today):
 
 def find_sources(costumed_pokemon):
     sources = []
-    if costumed_pokemon.pogo_assets_icon_file_names is not None:
-        sources.append("pogo_assets")
-    if costumed_pokemon.leekduck_asset_name is not None:
+    if costumed_pokemon.icon_file_names is not None:
+        sources.append("UICONS")
+    # LeekDuck dates the shiny of every costumed Pokémon it lists.
+    if costumed_pokemon.shiny_release_date is not None:
         sources.append("LeekDuck")
     if costumed_pokemon.bulbapedia_codes:
         sources.append("Bulbapedia")

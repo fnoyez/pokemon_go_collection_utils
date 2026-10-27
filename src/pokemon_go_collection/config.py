@@ -2,8 +2,6 @@ import dataclasses
 import datetime
 import pathlib
 
-from pokemon_go_collection.sources import pogo_assets as pogo_assets_m
-
 DEFAULT_APP_HOME_FOLDER_PATH = pathlib.Path.home() / ".pokemon_go_collection"
 DEFAULT_BACKUP_FOLDER_PATH = pathlib.Path(
     "/home/pavel/Data/Projects/data/.pokemon_go_collection_db_backup"
@@ -22,8 +20,6 @@ class AppConfig:
     icons_folder_path: pathlib.Path
     # The committed reference data: National Pokédex seed and overrides.
     data_folder_path: pathlib.Path
-    game_master_repository_folder_path: pathlib.Path
-    pogo_assets_repository_folder_path: pathlib.Path
     refresh_period_duration: datetime.timedelta
     # The browser profile the spawn watch logs in to pogocoordinates.com with.
     login_browser_profile_folder_path: pathlib.Path
@@ -40,21 +36,6 @@ def load_config(
     """Build the configuration, creating the application folders, and fail fast on an invalid path."""
     if not backup_folder_path.is_dir():
         raise FileNotFoundError(f"Backup folder does not exist: {backup_folder_path}")
-    game_master_repository_folder_path = repository_folder_path.parent / "game_masters"
-    if not (game_master_repository_folder_path / "latest" / "latest.json").is_file():
-        raise FileNotFoundError(
-            f"No game master found in {game_master_repository_folder_path}: "
-            "clone PokeMiners/game_masters there"
-        )
-    pogo_assets_repository_folder_path = repository_folder_path.parent / "pogo_assets"
-    if not (
-        pogo_assets_repository_folder_path / pogo_assets_m.ICONS_FOLDER_RELATIVE_PATH
-    ).is_dir():
-        raise FileNotFoundError(
-            f"No icons found in {pogo_assets_repository_folder_path}: "
-            "clone PokeMiners/pogo_assets there"
-        )
-
     sources_folder_path = app_home_folder_path / "sources"
     sources_folder_path.mkdir(parents=True, exist_ok=True)
 
@@ -64,8 +45,6 @@ def load_config(
         sources_folder_path=sources_folder_path,
         icons_folder_path=repository_folder_path / "static" / "icons",
         data_folder_path=repository_folder_path / "data",
-        game_master_repository_folder_path=game_master_repository_folder_path,
-        pogo_assets_repository_folder_path=pogo_assets_repository_folder_path,
         refresh_period_duration=refresh_period_duration,
         login_browser_profile_folder_path=(
             app_home_folder_path / "pogocoordinates_browser_profile"

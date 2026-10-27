@@ -35,11 +35,9 @@ class CostumedPokemon:
     # dates some costumed shinies by their species' shiny. It may be ahead of
     # today; None when LeekDuck lists no shiny of it.
     shiny_release_date: datetime.date | None
-    # The pogo_assets icon files, normal and shiny, the shiny being None for a
+    # The UICONS icon files, normal and shiny, the shiny being None for a
     # costumed Pokémon that cannot be shiny; None when it has no icon.
-    pogo_assets_icon_file_names: tuple[str, str | None] | None
-    # LeekDuck's name of its icon files; None when LeekDuck lists no shiny of it.
-    leekduck_asset_name: str | None
+    icon_file_names: tuple[str, str | None] | None
     # The codes of the Bulbapedia sprites standing for it.
     bulbapedia_codes: tuple[str, ...]
     # The year its costume belongs to: the one in the costume's name, or the
@@ -82,7 +80,7 @@ def build_costume_catalog(
         game_master, species_ids, form_overrides, costume_matches
     )
 
-    icon_file_names = _find_icon_file_names(icons, costume_form_keys)
+    icon_file_names = _find_icon_file_names(icons, species_ids, costume_form_keys)
     leekduck_shiny_releases = _find_leekduck_shiny_releases(
         shiny_releases, costume_form_keys
     )
@@ -140,12 +138,7 @@ def build_costume_catalog(
                 if key in leekduck_shiny_releases
                 else None
             ),
-            pogo_assets_icon_file_names=icon_file_names.get(key),
-            leekduck_asset_name=(
-                leekduck_shiny_releases[key].asset_name
-                if key in leekduck_shiny_releases
-                else None
-            ),
+            icon_file_names=icon_file_names.get(key),
             bulbapedia_codes=tuple(bulbapedia_codes[key]),
             costume_year=costume_years[key],
             game_order=find_game_order(key, species_ids, game_numbers),
@@ -205,14 +198,29 @@ def _find_costume_form_keys(game_master, species_ids, form_overrides, costume_ma
     }
 
 
-def _find_icon_file_names(icons, costume_form_keys):
-    """Return the normal and shiny icon files of each costumed Pokémon pogo_assets has an icon of."""
+def _find_icon_file_names(icons, species_ids, costume_form_keys):
+    """Return the normal and shiny icon files of each costumed Pokémon UICONS has an icon of.
+
+    An icon names its form by the game's whole identifier, and the species'
+    usual form, `PIKACHU_NORMAL`, stands for the species itself. An icon of a
+    form of a species the game master does not list is left out.
+    """
     file_names = collections.defaultdict(dict)
     for icon in icons:
-        if icon.is_female:
+        if icon.is_female or (
+            icon.form_id is not None and icon.dex_number not in species_ids
+        ):
             continue
+        form_suffix = (
+            catalog_m.find_form_suffix(icon.form_id, species_ids[icon.dex_number])
+            if icon.form_id is not None
+            else None
+        )
         key = _build_source_key(
-            icon.dex_number, icon.form_suffix, icon.costume, costume_form_keys
+            icon.dex_number,
+            None if form_suffix == "NORMAL" else form_suffix,
+            icon.costume,
+            costume_form_keys,
         )
         if key is not None:
             file_names[key][icon.is_shiny] = icon.file_name
@@ -224,13 +232,9 @@ def _find_icon_file_names(icons, costume_form_keys):
 
 
 def _build_source_key(dex_number, form_suffix, costume, costume_form_keys):
-    """Return the key of a costumed Pokémon from a source's names, or None for another Pokémon.
-
-    pogo_assets spells some costume names in lowercase, `May_2023`.
-    """
-    form_suffix = form_suffix.upper() if form_suffix is not None else None
+    """Return the key of a costumed Pokémon from a source's names, or None for another Pokémon."""
     if costume is not None:
-        return CostumedPokemonKey(dex_number, form_suffix, costume.upper())
+        return CostumedPokemonKey(dex_number, form_suffix, costume)
     if (dex_number, form_suffix) in costume_form_keys:
         return CostumedPokemonKey(dex_number, form_suffix, None)
     return None
@@ -500,8 +504,7 @@ def find_game_order(key, species_ids, game_numbers):
     if key.costume is None:
         costume_number = 0
     else:
-        # pogo_assets writes some costume names in lowercase: `May_2023`.
-        costume_number = game_numbers.costume_numbers.get(key.costume.upper())
+        costume_number = game_numbers.costume_numbers.get(key.costume)
     if form_number is None or costume_number is None:
         return None
     return (form_number, costume_number)

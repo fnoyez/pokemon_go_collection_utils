@@ -6,6 +6,7 @@ from pokemon_go_collection import costumes as costumes_m
 from pokemon_go_collection.sources import bulbapedia as bulbapedia_m
 from pokemon_go_collection.sources import game_master as game_master_m
 from pokemon_go_collection.sources import leekduck as leekduck_m
+from pokemon_go_collection.sources import masterfile as masterfile_m
 from pokemon_go_collection.sources import national_dex as national_dex_m
 from pokemon_go_collection.sources import overrides as overrides_m
 from pokemon_go_collection.sources import pogo_assets as pogo_assets_m
@@ -350,6 +351,12 @@ def test_build_costume_catalog_merges_the_sources():
         shiny_releases,
         event_pokemon_rows,
         costume_matches,
+        # The clone form is left unnumbered.
+        masterfile_m.GameNumbers(
+            default_form_numbers={25: 598},
+            form_numbers={"PIKACHU_NORMAL": 598, "PIKACHU_FALL_2019": 894},
+            costume_numbers={"HOLIDAY_2016": 1, "FEB_2019": 9},
+        ),
     )
 
     assert costume_catalog.costumed_pokemons == (
@@ -366,17 +373,7 @@ def test_build_costume_catalog_merges_the_sources():
             leekduck_asset_name="pm25.cHOLIDAY_2016",
             bulbapedia_codes=("Holiday2016",),
             costume_year=2016,
-        ),
-        costumes_m.CostumedPokemon(
-            costumed_pokemon_id="PIKACHU_COPY_2019",
-            key=costumes_m.CostumedPokemonKey(25, "COPY_2019", None),
-            name="Pikachu (Clone)",
-            release_date=datetime.date(2020, 2, 25),
-            shiny_release_date=None,
-            pogo_assets_icon_file_names=("pm25.fCOPY_2019.icon.png", None),
-            leekduck_asset_name=None,
-            bulbapedia_codes=("Copy2019",),
-            costume_year=2019,
+            game_order=(598, 1),
         ),
         costumes_m.CostumedPokemon(
             costumed_pokemon_id="PIKACHU.FEB_2019",
@@ -391,6 +388,7 @@ def test_build_costume_catalog_merges_the_sources():
             leekduck_asset_name=None,
             bulbapedia_codes=(),
             costume_year=2019,
+            game_order=(598, 9),
         ),
         costumes_m.CostumedPokemon(
             costumed_pokemon_id="PIKACHU_FALL_2019",
@@ -402,6 +400,19 @@ def test_build_costume_catalog_merges_the_sources():
             leekduck_asset_name="pm25.fFALL_2019",
             bulbapedia_codes=(),
             costume_year=2019,
+            game_order=(894, 0),
+        ),
+        costumes_m.CostumedPokemon(
+            costumed_pokemon_id="PIKACHU_COPY_2019",
+            key=costumes_m.CostumedPokemonKey(25, "COPY_2019", None),
+            name="Pikachu (Clone)",
+            release_date=datetime.date(2020, 2, 25),
+            shiny_release_date=None,
+            pogo_assets_icon_file_names=("pm25.fCOPY_2019.icon.png", None),
+            leekduck_asset_name=None,
+            bulbapedia_codes=("Copy2019",),
+            costume_year=2019,
+            game_order=None,
         ),
         costumes_m.CostumedPokemon(
             costumed_pokemon_id="ZUBAT.TopHat",
@@ -413,6 +424,7 @@ def test_build_costume_catalog_merges_the_sources():
             leekduck_asset_name=None,
             bulbapedia_codes=("TopHat",),
             costume_year=None,
+            game_order=None,
         ),
     )
     assert costume_catalog.unmatched_sprites == (
@@ -497,3 +509,67 @@ def test_is_unreleasable(release_date, costume_year, today, expected_output):
     assert (
         costumes_m.is_unreleasable(release_date, costume_year, today) == expected_output
     )
+
+
+def get_find_game_order_test_data():
+    test_cases = [
+        {
+            "id": "costume-on-the-species",
+            "key": costumes_m.CostumedPokemonKey(25, None, "HOLIDAY_2016"),
+            "expected_output": (598, 1),
+        },
+        {
+            "id": "costume-in-lowercase",
+            "key": costumes_m.CostumedPokemonKey(25, None, "May_2023"),
+            "expected_output": (598, 68),
+        },
+        {
+            "id": "costume-form",
+            "key": costumes_m.CostumedPokemonKey(25, "FALL_2019", None),
+            "expected_output": (894, 0),
+        },
+        {
+            "id": "costume-on-a-form",
+            "key": costumes_m.CostumedPokemonKey(710, "SMALL", "FALL_2022"),
+            "expected_output": (2641, 57),
+        },
+        {
+            "id": "unnumbered-costume",
+            "key": costumes_m.CostumedPokemonKey(25, None, "GOTOUR_2023_HAT"),
+            "expected_output": None,
+        },
+        {
+            "id": "unnumbered-form",
+            "key": costumes_m.CostumedPokemonKey(25, "COPY_2019", None),
+            "expected_output": None,
+        },
+        {
+            "id": "named-by-bulbapedia-only",
+            "key": costumes_m.CostumedPokemonKey(25, None, None, "TopHat"),
+            "expected_output": None,
+        },
+    ]
+
+    return [
+        pytest.param(test_case["key"], test_case["expected_output"], id=test_case["id"])
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize("key,expected_output", get_find_game_order_test_data())
+def test_find_game_order(key, expected_output):
+    game_numbers = masterfile_m.GameNumbers(
+        default_form_numbers={25: 598, 710: 2642},
+        form_numbers={
+            "PIKACHU_NORMAL": 598,
+            "PIKACHU_FALL_2019": 894,
+            "PUMPKABOO_SMALL": 2641,
+        },
+        costume_numbers={"HOLIDAY_2016": 1, "FALL_2022": 57, "MAY_2023": 68},
+    )
+
+    actual_output = costumes_m.find_game_order(
+        key, {25: "PIKACHU", 710: "PUMPKABOO"}, game_numbers
+    )
+
+    assert actual_output == expected_output

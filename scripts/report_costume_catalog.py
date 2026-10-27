@@ -1,7 +1,7 @@
 """Build the costumed Pokémon from their sources, and report how the sources cover them.
 
 Pulls the game master and pogo_assets repositories, fetches LeekDuck's shiny
-data and Bulbapedia's list of event Pokémon, prints the report and writes the
+data, Bulbapedia's list of event Pokémon and the masterfile's numbers, prints the report and writes the
 costumed Pokémon to a CSV file:
 
     uv run python scripts/report_costume_catalog.py --output-file-path costumed_pokemons.csv
@@ -22,6 +22,7 @@ from pokemon_go_collection.sources import bulbapedia as bulbapedia_m
 from pokemon_go_collection.sources import game_master as game_master_m
 from pokemon_go_collection.sources import git_repository as git_repository_m
 from pokemon_go_collection.sources import leekduck as leekduck_m
+from pokemon_go_collection.sources import masterfile as masterfile_m
 from pokemon_go_collection.sources import national_dex as national_dex_m
 from pokemon_go_collection.sources import overrides as overrides_m
 from pokemon_go_collection.sources import pogo_assets as pogo_assets_m
@@ -61,6 +62,11 @@ def main():
         cfg.sources_folder_path / "bulbapedia_event_pokemon.wiki",
         warnings,
     )
+    masterfile_content = refresh_m.fetch_source_snapshot(
+        masterfile_m.MASTERFILE_URL,
+        cfg.sources_folder_path / "masterfile.json",
+        warnings,
+    )
     for warning in warnings:
         logger.warning(warning)
 
@@ -72,6 +78,7 @@ def main():
         leekduck_m.parse_shiny_data(leekduck_content),
         bulbapedia_m.parse_event_pokemon(bulbapedia_content.decode("utf-8")),
         overrides_m.load_costume_matches(cfg.data_folder_path / "costume_matches.csv"),
+        masterfile_m.parse_masterfile(masterfile_content),
     )
     write_costumed_pokemons(
         pathlib.Path(args.output_file_path), costume_catalog.costumed_pokemons
@@ -91,6 +98,7 @@ def write_costumed_pokemons(file_path, costumed_pokemons):
                 "pogo_assets_icon",
                 "leekduck_asset_name",
                 "bulbapedia_codes",
+                "game_order",
             ]
         )
         for costumed_pokemon in costumed_pokemons:
@@ -103,6 +111,7 @@ def write_costumed_pokemons(file_path, costumed_pokemons):
                     (costumed_pokemon.pogo_assets_icon_file_names or ("",))[0],
                     costumed_pokemon.leekduck_asset_name or "",
                     " ".join(costumed_pokemon.bulbapedia_codes),
+                    " ".join(str(n) for n in costumed_pokemon.game_order or ()),
                 ]
             )
 
@@ -122,6 +131,7 @@ def build_report(costume_catalog, today):
         f"- with a pogo_assets icon: {count(costumed_pokemons, lambda c: c.pogo_assets_icon_file_names is not None)}",
         f"- with a LeekDuck icon only: {count(costumed_pokemons, lambda c: c.pogo_assets_icon_file_names is None and c.leekduck_asset_name is not None)}",
         f"- with no icon: {count(costumed_pokemons, lambda c: c.pogo_assets_icon_file_names is None and c.leekduck_asset_name is None)}",
+        f"- unnumbered by the masterfile: {count(costumed_pokemons, lambda c: c.game_order is None)}",
         "",
         "Sources holding each costumed Pokémon:",
         *(f"- {sources}: {nb}" for sources, nb in source_coverage.most_common()),
@@ -131,6 +141,13 @@ def build_report(costume_catalog, today):
             f"- {c.costumed_pokemon_id}: {c.name}, released {c.release_date}"
             for c in costumed_pokemons
             if c.key.bulbapedia_code is not None
+        ),
+        "",
+        "Unnumbered by the masterfile, ordered by release date:",
+        *(
+            f"- {c.costumed_pokemon_id}: {c.name}"
+            for c in costumed_pokemons
+            if c.game_order is None
         ),
         "",
         "In no Bulbapedia event, unreleasable:",

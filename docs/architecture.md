@@ -17,7 +17,7 @@
 - `src/pokemon_go_collection/db.py` — connection helpers.
 - `src/pokemon_go_collection/migrate.py` and `migrations/` — the migration runner and the schema.
 - `src/pokemon_go_collection/regions.py` — the regions and the National Pokédex numbers each introduced.
-- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `pogo_assets.py`, `bulbapedia.py`, `overrides.py`, `icons.py`, `pogocoordinates.py`, `discord.py`; `http.py`, the download helper they share, and `git_repository.py`, the pull of the sibling repositories.
+- `src/pokemon_go_collection/sources/` — one module per data source, each turning the source's raw content into plain records: `game_master.py`, `national_dex.py`, `pvpoke.py`, `leekduck.py`, `pogo_assets.py`, `bulbapedia.py`, `masterfile.py`, `overrides.py`, `icons.py`, `pogocoordinates.py`, `discord.py`; `http.py`, the download helper they share, and `git_repository.py`, the pull of the sibling repositories.
 - `src/pokemon_go_collection/pvp_ranks.py` — the PvP rank computation of [pvp_ranks.md](pvp_ranks.md), pure functions over base stats and CP multipliers.
 - `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
 - `src/pokemon_go_collection/costumes.py` — merges the sources' records into the costumed Pokémon, following [costumes.md](costumes.md); pure functions over records, like `catalog.py`.
@@ -70,7 +70,7 @@ The SQLite backup API copies the database while the application runs, one automa
 A refresh brings the catalog up to date with its sources:
 
 1. Pull the game master and pogo_assets repositories (`git pull --ff-only`).
-2. Download the PvPoke game master, the LeekDuck shiny data and Bulbapedia's list of event Pokémon, replacing their snapshots.
+2. Download the PvPoke game master, the LeekDuck shiny data, Bulbapedia's list of event Pokémon and the Masterfile-Generator's numbers, replacing their snapshots.
 3. Rebuild the catalog and the costumed Pokémon from the sources. A Bulbapedia sprite `data/costume_matches.csv` has no line for, or a line standing for no sprite, adds a warning.
 4. Download the icons missing from the cache; a costumed Pokémon's comes from the pogo_assets clone, or else from LeekDuck.
 5. Write the catalog, with each entry's icon and base stats, to `POKEMON_ENTRY`, the Mega and Primal evolutions to `TEMPORARY_EVOLUTION`, the battle forms to `BATTLE_FORM`, the CP multipliers to `CP_MULTIPLIER`, and the costumed Pokémon to `COSTUMED_POKEMON` and `COSTUMED_POKEMON_EVOLUTION`, in one transaction.

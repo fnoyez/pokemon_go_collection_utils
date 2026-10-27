@@ -42,7 +42,7 @@ A costumed Pokémon evolves into the costumed Pokémon of its evolution wearing 
 
 A costumed Pokémon is named after its species and its costume: `Pikachu (Holiday Hat)`, `Pumpkaboo (Small, Halloween)`. The costume's label is LeekDuck's when it lists one, Bulbapedia's otherwise, unless that label covers several costumes (`Cosplay Pikachu`), and the costume's name otherwise. A Bulbapedia label naming a Pokémon keeps its costume part: `Charmander wearing Friede's goggles` reads `Friede's goggles`.
 
-They are ordered by National Pokédex number, then by release date, those without one last.
+They are ordered as the game's inventory sorts them by *Number*: by National Pokédex number, then by the game's number of the form, then by that of the costume, from the Masterfile-Generator (see [data_sources.md](data_sources.md), *Masterfile-Generator*). A costume attribute is worn on its species' default form, numbered before its costume forms, so Pikachu's costume attributes all come before its costume forms. A costumed Pokémon whose form or costume the masterfile does not number, or which has no game name yet, comes after the others of its species, by release date, those without one last.
 
 ## Maintaining the matches
 

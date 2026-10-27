@@ -15,6 +15,7 @@ from pokemon_go_collection.sources import git_repository as git_repository_m
 from pokemon_go_collection.sources import http as http_m
 from pokemon_go_collection.sources import icons as icons_m
 from pokemon_go_collection.sources import leekduck as leekduck_m
+from pokemon_go_collection.sources import masterfile as masterfile_m
 from pokemon_go_collection.sources import national_dex as national_dex_m
 from pokemon_go_collection.sources import overrides as overrides_m
 from pokemon_go_collection.sources import pogo_assets as pogo_assets_m
@@ -92,6 +93,11 @@ def run_refresh(cfg, now):
             cfg.sources_folder_path / "bulbapedia_event_pokemon.wiki",
             warnings,
         )
+        masterfile_content = fetch_source_snapshot(
+            masterfile_m.MASTERFILE_URL,
+            cfg.sources_folder_path / "masterfile.json",
+            warnings,
+        )
 
         game_master = game_master_m.load_game_master(
             cfg.game_master_repository_folder_path
@@ -124,6 +130,7 @@ def run_refresh(cfg, now):
             overrides_m.load_costume_matches(
                 cfg.data_folder_path / "costume_matches.csv"
             ),
+            masterfile_m.parse_masterfile(masterfile_content),
         )
         warnings.extend(build_costume_match_warnings(costume_catalog))
         icon_file_names = icons_m.download_missing_icons(

@@ -141,6 +141,7 @@ def make_costumed_pokemon(costumed_pokemon_id, key, shiny_release_date):
         leekduck_asset_name=None,
         bulbapedia_codes=("TopHat",),
         costume_year=2026,
+        game_order=None,
     )
 
 

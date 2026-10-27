@@ -45,13 +45,17 @@ class CostumedPokemon:
     # The year its costume belongs to: the one in the costume's name, or the
     # first one another Pokémon wore it in; None when neither gives one.
     costume_year: int | None
+    # The game's numbers of its form and of its costume, the latter 0 for a
+    # costume form, which the game sorts a species' Pokémon by; None when the
+    # masterfile does not number both.
+    game_order: tuple[int, int] | None
     # The costumed Pokémon it evolves into, keeping its costume.
     evolution_target_ids: tuple[str, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
 class CostumeCatalog:
-    # By National Pokédex number, then release date, the unreleased last.
+    # In the order docs/costumes.md, *Names and order*, describes.
     costumed_pokemons: tuple[CostumedPokemon, ...]
     # Bulbapedia sprites `data/costume_matches.csv` has no line for.
     unmatched_sprites: tuple
@@ -67,6 +71,7 @@ def build_costume_catalog(
     shiny_releases,
     event_pokemon_rows,
     costume_matches,
+    game_numbers,
 ):
     """Merge the costumed Pokémon of every source, following docs/costumes.md."""
     species_ids = {form.dex_number: form.species_id for form in game_master.forms}
@@ -143,6 +148,7 @@ def build_costume_catalog(
             ),
             bulbapedia_codes=tuple(bulbapedia_codes[key]),
             costume_year=costume_years[key],
+            game_order=find_game_order(key, species_ids, game_numbers),
             evolution_target_ids=tuple(
                 build_costumed_pokemon_id(target_key, species_ids)
                 for target_key in evolution_target_keys[key]
@@ -479,9 +485,33 @@ def _build_name(key, species_name, leekduck_shiny_release, bulbapedia_label):
     return f"{species_name} ({', '.join(label_parts)})"
 
 
+def find_game_order(key, species_ids, game_numbers):
+    """Return the game's numbers of a costumed Pokémon's form and costume.
+
+    The costume is 0 for a costume form. None when the masterfile does not
+    number both, or when the costumed Pokémon has no game name yet.
+    """
+    if key.bulbapedia_code is not None:
+        return None
+    if key.form_suffix is None:
+        form_number = game_numbers.default_form_numbers.get(key.dex_number)
+    else:
+        form_number = game_numbers.form_numbers.get(_build_form_id(key, species_ids))
+    if key.costume is None:
+        costume_number = 0
+    else:
+        # pogo_assets writes some costume names in lowercase: `May_2023`.
+        costume_number = game_numbers.costume_numbers.get(key.costume.upper())
+    if form_number is None or costume_number is None:
+        return None
+    return (form_number, costume_number)
+
+
 def _sort_key(costumed_pokemon):
     return (
         costumed_pokemon.key.dex_number,
+        costumed_pokemon.game_order is None,
+        costumed_pokemon.game_order or (0, 0),
         costumed_pokemon.release_date or datetime.date.max,
         costumed_pokemon.name,
     )

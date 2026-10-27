@@ -13,6 +13,7 @@ A reference to the external sources about Pokémon GO: where each one is, how it
 | LeekDuck icons | `cdn.leekduck.com/assets/img/pokemon_icons/{aa_fn}.icon.png`, `.s.icon.png` for the shiny | `aa_fn`, as in its shiny data | An icon, normal and shiny, for every Pokémon of its shiny data, drawn on a 256-pixel canvas the Pokémon fills only part of | Pokémon without a shiny |
 | PokeAPI | `pokeapi.co` API; sprites at `raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon` | National Pokédex number and English name | Main series species: names, evolution chains, baby flag; main series sprites | Anything specific to Pokémon GO |
 | pogocoordinates.com | JSON API, `coordinates-api.pokemongopro.com` | Pokédex number, numeric form identifier, numeric costume identifier | Live spawns; the forms it can search, and the costumes spawning now | Costumes not spawning now |
+| Masterfile-Generator (WatWowMap) | `raw.githubusercontent.com/WatWowMap/Masterfile-Generator/master/master-latest-raw.json` | The game's form and costume names, with their numbers: `PIKACHU_FALL_2019` is 894, `HOLIDAY_2016` 1 | The number of every form and costume of the game's decoded protocol (POGOProtos), and each species' default form | Release information |
 | Bulbapedia, *Event Pokémon (GO)* | `bulbapedia.bulbagarden.net/w/index.php?title=Event_Pok%C3%A9mon_(GO)&action=raw`, the page's wikitext | English costume label and its own image code: `Festive hat`, `0025Holiday2016` | Every costume released, with the Pokémon wearing it, those obtained only by evolution, and each event it appeared in, with dates and whether a shiny was possible | Costumes not released yet; the game's costume names |
 
 ## Costumes
@@ -22,7 +23,7 @@ A costume is either of two things in the game's data, and the sources split alon
 - **A form flagged `isCostume`** in the game master, such as `PIKACHU_FALL_2019` or the Flying Pikachus: 97 of them, 67 of which are Pikachu's. pogo_assets and LeekDuck write it as a form, `pm25.fFALL_2019`, and pogocoordinates lists it as a form, with its form identifier.
 - **A costume attribute** on an ordinary form, named by the game's costume enum: `HOLIDAY_2016`, `JAN_2020_NOEVOLVE`. The game master does not list these, beyond the `allowNoevolveEvolution` of the species allowed to evolve while wearing a `_NOEVOLVE` one. pogo_assets and LeekDuck write it after the form, `pm1.cJAN_2020_NOEVOLVE`, `pm710.fSMALL.cFALL_2022`; pogocoordinates gives its numeric identifier (`57` for `FALL_2022`) only while it spawns.
 
-The game's costume name, with the form, is what identifies a costumed Pokémon across the sources; no source maps those names to numeric identifiers except pogocoordinates, for the live costumes. A costume without `_NOEVOLVE` keeps its costume when it evolves; a `_NOEVOLVE` one does so only for the species whose `allowNoevolveEvolution` lists it.
+The game's costume name, with the form, is what identifies a costumed Pokémon across the sources; the Masterfile-Generator maps every form and costume name to the game's number, and pogocoordinates does for the costumes spawning now. A costume without `_NOEVOLVE` keeps its costume when it evolves; a `_NOEVOLVE` one does so only for the species whose `allowNoevolveEvolution` lists it.
 
 The sources' costume lists overlap without matching:
 
@@ -52,6 +53,12 @@ The sources' costume lists overlap without matching:
 ### pogocoordinates.com
 
 - Its form catalog lists a costume only while it spawns, flagged `live`, with `costume_id` and `costume_name`; the costume forms are listed all the time, with `live` telling which spawn now. A search asks for a costume by `costume_id` on the form, and each spawn found holds `costume_id` and `costume`. The calls themselves are in [spawn_watch.md](spawn_watch.md), *The service*.
+
+### Masterfile-Generator
+
+- `pokemon` gives each species' `defaultFormId`, the form of its Pokémon that have no other (`PIKACHU_NORMAL`, 598); `forms` and `costumes` give each form's `formId` and each costume's `id` by their `proto`, the game's name.
+- The numbers follow the order the game added its forms and costumes in, not their release: the Summer 2023 Pikachus are numbered after the GO Fest 2025 ones.
+- It is regenerated from the decoded protocol of each game version, within days of it, and so holds forms the game master lacks while its repository lags.
 
 ### Bulbapedia, *Event Pokémon (GO)*
 

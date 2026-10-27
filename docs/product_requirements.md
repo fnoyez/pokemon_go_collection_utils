@@ -19,7 +19,7 @@ More features will follow, each as its own tab of the same application.
 
 - A Costumed shundos tab, next to the Shundos tab, tracks the costumed shundos the same way: the same grid, grouping by region and marking by a click.
 - Every costumed Pokémon known is listed: released, announced, or found only in the game's files, as are the Pokémon of the Shundos tab.
-- Within a species, costumed Pokémon are ordered by the release date of the costumed Pokémon itself, not of its shiny.
+- Within a species, costumed Pokémon are ordered as the game's inventory sorts them by *Number*, so the tab can be checked against the inventory.
 - A costumed Pokémon found only in the game's files, with a costume of a past year, is not expected to be released: it is shown as unreleased in an *Unreleasable* section at the bottom of the tab, apart from those awaiting their release.
 
 The design is in [costumes.md](costumes.md).

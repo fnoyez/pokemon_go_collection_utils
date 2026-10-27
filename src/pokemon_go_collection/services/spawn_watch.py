@@ -46,6 +46,8 @@ class CheckStatus(enum.Enum):
 class WatchConfig:
     is_enabled: bool
     check_interval_duration: datetime.timedelta
+    # Whether the costumed shundos are searched for too.
+    is_costume_search_enabled: bool = False
 
 
 @dataclasses.dataclass(frozen=True)
@@ -57,12 +59,16 @@ class CheckOutcome:
 
 @dataclasses.dataclass(frozen=True)
 class HuntTarget:
-    """A hunt list entry, with the game master forms it stands for."""
+    """A hunt list entry, or costumed Pokémon, with the game master forms it stands for."""
 
     entry_id: str
     dex_number: int
     name: str
     form_ids: tuple[str, ...]
+    # A costumed Pokémon's: its costume worn on its form, or its costume form
+    # itself when `costume` is None.
+    is_costumed: bool = False
+    costume: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -121,14 +127,16 @@ def run_spawn_watch_loop(
 
 def load_watch_config(db_file_path):
     with db_m.db_conn(db_file_path) as conn:
-        is_enabled, check_interval_minutes = conn.execute(
+        is_enabled, check_interval_minutes, is_costume_search_enabled = conn.execute(
             """
-            SELECT is_enabled, check_interval_minutes
+            SELECT is_enabled, check_interval_minutes, is_costume_search_enabled
             FROM spawn_watch_config
             """
         ).fetchone()
     return WatchConfig(
-        bool(is_enabled), datetime.timedelta(minutes=check_interval_minutes)
+        bool(is_enabled),
+        datetime.timedelta(minutes=check_interval_minutes),
+        is_costume_search_enabled=bool(is_costume_search_enabled),
     )
 
 
@@ -195,7 +203,11 @@ def run_spawn_check(cfg, now, retention_duration=datetime.timedelta(days=7)):
     service_forms = load_service_forms(
         cfg.sources_folder_path / "pogocoordinates_catalog.json", now
     )
-    hunt_targets = load_hunt_targets(cfg.db_file_path, now.date())
+    hunt_targets = load_hunt_targets(
+        cfg.db_file_path,
+        now.date(),
+        includes_costumes=load_watch_config(cfg.db_file_path).is_costume_search_enabled,
+    )
     try:
         spawns = pogocoordinates_m.search_spawns(
             token, build_search_spec(hunt_targets, service_forms)
@@ -279,7 +291,7 @@ def _stop_for_login(db_file_path, webhook_url, now, note):
 
 
 def load_service_forms(
-    snapshot_file_path, now, max_age_duration=datetime.timedelta(days=1)
+    snapshot_file_path, now, max_age_duration=datetime.timedelta(hours=1)
 ):
     """Return the service's forms, from a snapshot fetched again when it is `max_age_duration` old.
 
@@ -306,13 +318,17 @@ def load_service_forms(
     )
 
 
-def load_hunt_targets(db_file_path, today):
+def load_hunt_targets(db_file_path, today, includes_costumes=False):
+    """Return the hunt list's entries, and its costumed Pokémon when `includes_costumes`."""
     board_entries = shundos_m.load_board_entries(
         db_file_path, shundos_m.Board.SHUNDOS, today
     )
     hunt_entries = hunt_list_m.select_hunt_entries(
         board_entries,
         hunt_list_m.load_evolution_edges(db_file_path, shundos_m.Board.SHUNDOS),
+    )
+    costumed_hunt_targets = (
+        load_costumed_hunt_targets(db_file_path, today) if includes_costumes else []
     )
     with db_m.db_conn(db_file_path) as conn:
         rows = conn.execute(
@@ -332,7 +348,54 @@ def load_hunt_targets(db_file_path, today):
             tuple(form_ids_by_entry_id[entry.entry_id]),
         )
         for entry in hunt_entries
-    ]
+    ] + costumed_hunt_targets
+
+
+def load_costumed_hunt_targets(db_file_path, today):
+    """Return the costumed Pokémon the hunt list rules select on their own board.
+
+    One identified by its Bulbapedia code is left out, the service knowing a
+    costume by the game's name only.
+    """
+    board_entries = shundos_m.load_board_entries(
+        db_file_path, shundos_m.Board.COSTUMED_SHUNDOS, today
+    )
+    hunt_entries = hunt_list_m.select_hunt_entries(
+        board_entries,
+        hunt_list_m.load_evolution_edges(
+            db_file_path, shundos_m.Board.COSTUMED_SHUNDOS
+        ),
+    )
+    with db_m.db_conn(db_file_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT costumed_pokemon_id, costume, bulbapedia_code
+            FROM costumed_pokemon
+            """
+        ).fetchall()
+    costumes = {
+        costumed_pokemon_id: (costume, bulbapedia_code)
+        for costumed_pokemon_id, costume, bulbapedia_code in rows
+    }
+    hunt_targets = []
+    for entry in hunt_entries:
+        costume, bulbapedia_code = costumes[entry.entry_id]
+        if bulbapedia_code is not None:
+            continue
+        # The identifier is the form's, followed by `.<costume>` for a costume
+        # worn on it, as docs/costumes.md describes.
+        form_id = entry.entry_id.partition(".")[0]
+        hunt_targets.append(
+            HuntTarget(
+                entry.entry_id,
+                entry.dex_number,
+                entry.name,
+                (form_id,),
+                is_costumed=True,
+                costume=costume,
+            )
+        )
+    return hunt_targets
 
 
 def build_search_spec(hunt_targets, service_forms):
@@ -345,6 +408,9 @@ def build_search_spec(hunt_targets, service_forms):
     species_forms = set()
     pokemon_ids = set()
     for target in hunt_targets:
+        if target.is_costumed:
+            species_forms.update(find_costumed_search_keys(target, service_forms))
+            continue
         matched_service_forms = [
             service_forms_by_key[(target.dex_number, form_id)]
             for form_id in target.form_ids
@@ -353,7 +419,7 @@ def build_search_spec(hunt_targets, service_forms):
         if not matched_service_forms:
             pokemon_ids.add(target.dex_number)
         species_forms.update(
-            (service_form.pokemon_id, service_form.form_id)
+            (service_form.pokemon_id, service_form.form_id, None)
             for service_form in matched_service_forms
         )
     return {
@@ -361,12 +427,37 @@ def build_search_spec(hunt_targets, service_forms):
         "shiny_account": None,
         "pokemon_ids": sorted(pokemon_ids),
         "species_forms": [
-            {"pokemon_id": pokemon_id, "form_id": form_id, "costume_id": None}
-            for pokemon_id, form_id in sorted(species_forms)
+            {"pokemon_id": pokemon_id, "form_id": form_id, "costume_id": costume_id}
+            for pokemon_id, form_id, costume_id in sorted(
+                species_forms, key=lambda key: (key[0], key[1], key[2] or 0)
+            )
         ],
         "iv_mode": "percent",
         "iv_percent_min": 100,
         "sort": "IV",
+    }
+
+
+def find_costumed_search_keys(target, service_forms):
+    """Return the (Pokédex number, form, costume) the service searches a costumed Pokémon by.
+
+    Only a costume spawning now is searched for: the service lists a costume
+    worn on a form only then, and flags a costume form spawning now as live.
+    """
+    if target.costume is not None:
+        return {
+            (service_form.pokemon_id, service_form.form_id, service_form.costume_id)
+            for service_form in service_forms
+            if service_form.pokemon_id == target.dex_number
+            and service_form.costume_name == target.costume
+            and service_form.is_live
+        }
+    return {
+        (service_form.pokemon_id, service_form.form_id, None)
+        for service_form in service_forms
+        if service_form.form_name == target.form_ids[0]
+        and service_form.costume_id is None
+        and service_form.is_live
     }
 
 
@@ -381,24 +472,69 @@ def match_spawns(
 
     The matching rules are in docs/spawn_watch.md, *A check*.
     """
+    entry_targets = [target for target in hunt_targets if not target.is_costumed]
     targets_by_form_key = {
         (target.dex_number, form_id): target
-        for target in hunt_targets
+        for target in entry_targets
         for form_id in target.form_ids
     }
     targets_by_dex_number = {}
-    for target in hunt_targets:
+    for target in entry_targets:
         targets_by_dex_number.setdefault(target.dex_number, []).append(target)
+    costumed_targets_by_costume = {
+        (target.dex_number, target.costume): target
+        for target in hunt_targets
+        if target.is_costumed and target.costume is not None
+    }
+    costumed_targets_by_form_key = {
+        (target.dex_number, target.form_ids[0]): target
+        for target in hunt_targets
+        if target.is_costumed and target.costume is None
+    }
+    costume_names = {
+        service_form.costume_id: service_form.costume_name
+        for service_form in service_forms
+        if service_form.costume_id is not None
+    }
     service_forms_by_dex_number = {}
+    costume_service_forms_by_dex_number = {}
     for service_form in service_forms:
         if not service_form.is_costume:
             service_forms_by_dex_number.setdefault(service_form.pokemon_id, []).append(
                 service_form
             )
+        elif service_form.costume_id is None:
+            costume_service_forms_by_dex_number.setdefault(
+                service_form.pokemon_id, []
+            ).append(service_form)
 
     matches = []
     for spawn in spawns:
         if spawn.despawn_time - now < min_remaining_duration:
+            continue
+        # A costumed spawn is a costumed Pokémon or nothing, never the
+        # ordinary Pokémon of the hunt list.
+        if spawn.costume_id is not None or spawn.costume is not None:
+            target = costumed_targets_by_costume.get(
+                (spawn.pokemon_id, costume_names.get(spawn.costume_id, spawn.costume))
+            )
+            if target is not None:
+                matches.append(SpawnMatch(spawn, target, is_form_recognized=True))
+            continue
+        costume_form_name = (
+            find_spawn_form_name(
+                spawn.form,
+                costume_service_forms_by_dex_number.get(spawn.pokemon_id, []),
+            )
+            if spawn.form is not None
+            else None
+        )
+        if costume_form_name is not None:
+            target = costumed_targets_by_form_key.get(
+                (spawn.pokemon_id, costume_form_name)
+            )
+            if target is not None:
+                matches.append(SpawnMatch(spawn, target, is_form_recognized=True))
             continue
         form_name = find_spawn_form_name(
             spawn.form, service_forms_by_dex_number.get(spawn.pokemon_id, [])
@@ -592,7 +728,9 @@ def _draw_jitter_duration():
     return datetime.timedelta(seconds=random.uniform(0, 30))
 
 
-def save_watch_config(db_file_path, is_enabled, check_interval_duration):
+def save_watch_config(
+    db_file_path, is_enabled, check_interval_duration, is_costume_search_enabled
+):
     """Store the settings; an interval under the minimum is refused with ValueError."""
     if check_interval_duration < MIN_CHECK_INTERVAL_DURATION:
         raise ValueError(
@@ -602,9 +740,14 @@ def save_watch_config(db_file_path, is_enabled, check_interval_duration):
         conn.execute(
             """
             UPDATE spawn_watch_config
-            SET is_enabled = ?, check_interval_minutes = ?
+            SET
+              is_enabled = ?, check_interval_minutes = ?, is_costume_search_enabled = ?
             """,
-            (int(is_enabled), int(check_interval_duration.total_seconds() // 60)),
+            (
+                int(is_enabled),
+                int(check_interval_duration.total_seconds() // 60),
+                int(is_costume_search_enabled),
+            ),
         )
 
 

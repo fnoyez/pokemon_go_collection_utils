@@ -86,6 +86,9 @@ def _render_watch_settings(db_file_path):
     # a login is refused, and store a change as soon as it is made.
     config = spawn_watch_m.load_watch_config(db_file_path)
     st.session_state["watch_is_enabled"] = config.is_enabled
+    st.session_state["watch_is_costume_search_enabled"] = (
+        config.is_costume_search_enabled
+    )
     st.session_state["watch_check_interval_minutes_nb"] = int(
         config.check_interval_duration.total_seconds() // 60
     )
@@ -97,6 +100,16 @@ def _render_watch_settings(db_file_path):
         key="watch_is_enabled",
         on_change=_save_watch_settings,
         args=(db_file_path,),
+    )
+    st.toggle(
+        "Search costumed Pokémon too",
+        key="watch_is_costume_search_enabled",
+        on_change=_save_watch_settings,
+        args=(db_file_path,),
+        help=(
+            "Adds the costumed shundos of the Costumed shundos tab to the search, "
+            "those whose costume spawns now only."
+        ),
     )
     st.number_input(
         "Check interval (minutes)",
@@ -117,6 +130,7 @@ def _save_watch_settings(db_file_path):
         db_file_path,
         st.session_state["watch_is_enabled"],
         datetime.timedelta(minutes=st.session_state["watch_check_interval_minutes_nb"]),
+        st.session_state["watch_is_costume_search_enabled"],
     )
 
 

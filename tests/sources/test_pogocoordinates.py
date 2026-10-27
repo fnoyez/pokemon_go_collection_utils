@@ -59,3 +59,50 @@ def test_build_reveal_url_quotes_the_code():
     assert pogocoordinates_m.build_reveal_url("ozR_gLgk/vn7") == (
         "https://coordinates-api.pokemongopro.com/reveal/ozR_gLgk%2Fvn7"
     )
+
+
+def test_parse_form_catalog_reads_the_costumes_spawning_now():
+    content = json.loads(
+        textwrap.dedent(
+            """
+            [
+              {"pokemon_id": 37, "form_id": 55, "form_suffix": null, "form_name": null, "species_name": "Vulpix", "costume": true, "costume_id": 57, "costume_name": "FALL_2022", "live": true},
+              {"pokemon_id": 25, "form_id": 894, "form_suffix": "FALL_2019", "form_name": "PIKACHU_FALL_2019", "species_name": "Pikachu", "costume": true, "live": false},
+              {"pokemon_id": 19, "form_id": 46, "form_suffix": "ALOLA", "form_name": "RATTATA_ALOLA", "species_name": "Rattata"}
+            ]
+            """
+        )
+    )
+
+    assert pogocoordinates_m.parse_form_catalog(content) == [
+        pogocoordinates_m.ServiceForm(
+            pokemon_id=37,
+            form_id=55,
+            form_name=None,
+            form_suffix=None,
+            is_costume=True,
+            costume_id=57,
+            costume_name="FALL_2022",
+            is_live=True,
+        ),
+        pogocoordinates_m.ServiceForm(
+            pokemon_id=25,
+            form_id=894,
+            form_name="PIKACHU_FALL_2019",
+            form_suffix="FALL_2019",
+            is_costume=True,
+            costume_id=None,
+            costume_name=None,
+            is_live=False,
+        ),
+        pogocoordinates_m.ServiceForm(
+            pokemon_id=19,
+            form_id=46,
+            form_name="RATTATA_ALOLA",
+            form_suffix="ALOLA",
+            is_costume=False,
+            costume_id=None,
+            costume_name=None,
+            is_live=False,
+        ),
+    ]

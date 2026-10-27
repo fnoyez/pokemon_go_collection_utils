@@ -16,8 +16,9 @@ from pokemon_go_collection.sources import pogocoordinates as pogocoordinates_m
 NOW = datetime.datetime(2026, 10, 10, 20, 0, tzinfo=datetime.timezone.utc)
 
 # Rattata with an Alolan form, Zorua with a Hisuian form, Unown with letters
-# only, Pikachu with a costume, and Basculegion, which the service lists under
-# forms the catalog does not know.
+# only, Pikachu with costume forms, one spawning now, Vulpix with a costume
+# spawning now, and Basculegion, which the service lists under forms the
+# catalog does not know.
 SERVICE_FORMS = [
     pogocoordinates_m.ServiceForm(
         pokemon_id=19,
@@ -82,6 +83,24 @@ SERVICE_FORMS = [
         form_suffix=None,
         is_costume=False,
     ),
+    pogocoordinates_m.ServiceForm(
+        pokemon_id=25,
+        form_id=3379,
+        form_name="PIKACHU_HALLOWEEN_2026",
+        form_suffix="HALLOWEEN_2026",
+        is_costume=True,
+        is_live=True,
+    ),
+    pogocoordinates_m.ServiceForm(
+        pokemon_id=37,
+        form_id=55,
+        form_name=None,
+        form_suffix=None,
+        is_costume=True,
+        costume_id=57,
+        costume_name="FALL_2022",
+        is_live=True,
+    ),
 ]
 
 RATTATA_ALOLA = spawn_watch_m.HuntTarget(
@@ -105,6 +124,28 @@ UNOWN = spawn_watch_m.HuntTarget(
 ZORUA = spawn_watch_m.HuntTarget(
     entry_id="ZORUA", dex_number=570, name="Zorua", form_ids=("ZORUA_NORMAL", "ZORUA")
 )
+PIKACHU_FALL_2019 = spawn_watch_m.HuntTarget(
+    entry_id="PIKACHU_FALL_2019",
+    dex_number=25,
+    name="Pikachu (Mimikyu Costume)",
+    form_ids=("PIKACHU_FALL_2019",),
+    is_costumed=True,
+)
+PIKACHU_HALLOWEEN_2026 = spawn_watch_m.HuntTarget(
+    entry_id="PIKACHU_HALLOWEEN_2026",
+    dex_number=25,
+    name="Pikachu (Halloween hat & capelet)",
+    form_ids=("PIKACHU_HALLOWEEN_2026",),
+    is_costumed=True,
+)
+VULPIX_FALL_2022 = spawn_watch_m.HuntTarget(
+    entry_id="VULPIX.FALL_2022",
+    dex_number=37,
+    name="Vulpix (Halloween)",
+    form_ids=("VULPIX",),
+    is_costumed=True,
+    costume="FALL_2022",
+)
 BASCULEGION = spawn_watch_m.HuntTarget(
     entry_id="BASCULEGION",
     dex_number=902,
@@ -119,13 +160,30 @@ def get_build_search_spec_test_data():
             "id": "matched-forms-asked-for-by-form",
             "hunt_targets": [RATTATA_ALOLA, PIKACHU, UNOWN],
             "expected_pokemon_ids": [],
-            "expected_species_forms": [(19, 46), (25, 598), (201, 1), (201, 2)],
+            "expected_species_forms": [
+                (19, 46, None),
+                (25, 598, None),
+                (201, 1, None),
+                (201, 2, None),
+            ],
         },
         {
             "id": "entry-without-listed-form-asked-for-whole",
             "hunt_targets": [ZORUA, BASCULEGION],
             "expected_pokemon_ids": [902],
-            "expected_species_forms": [(570, 2108)],
+            "expected_species_forms": [(570, 2108, None)],
+        },
+        {
+            "id": "costumes-spawning-now-asked-for-by-costume-or-form",
+            "hunt_targets": [VULPIX_FALL_2022, PIKACHU_HALLOWEEN_2026],
+            "expected_pokemon_ids": [],
+            "expected_species_forms": [(25, 3379, None), (37, 55, 57)],
+        },
+        {
+            "id": "costume-form-not-spawning-not-asked-for",
+            "hunt_targets": [PIKACHU_FALL_2019],
+            "expected_pokemon_ids": [],
+            "expected_species_forms": [],
         },
     ]
 
@@ -149,7 +207,11 @@ def test_build_search_spec(hunt_targets, expected_pokemon_ids, expected_species_
 
     assert spec["pokemon_ids"] == expected_pokemon_ids
     assert [
-        (species_form["pokemon_id"], species_form["form_id"])
+        (
+            species_form["pokemon_id"],
+            species_form["form_id"],
+            species_form["costume_id"],
+        )
         for species_form in spec["species_forms"]
     ] == expected_species_forms
     assert (spec["shiny_only"], spec["iv_percent_min"], spec["sort"]) == (
@@ -238,6 +300,7 @@ def make_spawn(
     pokemon_id,
     form=None,
     despawn_time=NOW + datetime.timedelta(minutes=10),
+    costume_id=None,
 ):
     return pogocoordinates_m.Spawn(
         encounter_id=encounter_id,
@@ -251,6 +314,7 @@ def make_spawn(
         location="Orléans, Loiret, France",
         despawn_time=despawn_time,
         reveal_code=f"code-{encounter_id}",
+        costume_id=costume_id,
     )
 
 
@@ -288,6 +352,26 @@ def get_match_spawns_test_data():
             "spawns": [make_spawn("1", 570)],
             "expected_matches": [("1", "ZORUA", True)],
         },
+        {
+            "id": "costume-on-hunt-list",
+            "spawns": [make_spawn("1", 37, costume_id=57)],
+            "expected_matches": [("1", "VULPIX.FALL_2022", True)],
+        },
+        {
+            "id": "costume-form-on-hunt-list",
+            "spawns": [make_spawn("1", 25, form="Halloween 2026")],
+            "expected_matches": [("1", "PIKACHU_HALLOWEEN_2026", True)],
+        },
+        {
+            "id": "costumed-spawn-of-a-hunted-species-dropped",
+            "spawns": [make_spawn("1", 570, costume_id=57)],
+            "expected_matches": [],
+        },
+        {
+            "id": "costume-form-of-a-hunted-species-dropped",
+            "spawns": [make_spawn("1", 25, form="Fall 2019")],
+            "expected_matches": [],
+        },
     ]
 
     return [
@@ -303,7 +387,17 @@ def get_match_spawns_test_data():
 @pytest.mark.parametrize("spawns,expected_matches", get_match_spawns_test_data())
 def test_match_spawns(spawns, expected_matches):
     matches = spawn_watch_m.match_spawns(
-        spawns, [RATTATA_ALOLA, PIKACHU, UNOWN, ZORUA], SERVICE_FORMS, NOW
+        spawns,
+        [
+            RATTATA_ALOLA,
+            PIKACHU,
+            UNOWN,
+            ZORUA,
+            VULPIX_FALL_2022,
+            PIKACHU_HALLOWEEN_2026,
+        ],
+        SERVICE_FORMS,
+        NOW,
     )
 
     assert [
@@ -544,10 +638,14 @@ def test_save_watch_config(tmp_path, check_interval_duration, expectation):
     migrate_m.init_db(db_file_path)
 
     with expectation:
-        spawn_watch_m.save_watch_config(db_file_path, True, check_interval_duration)
+        spawn_watch_m.save_watch_config(
+            db_file_path, True, check_interval_duration, True
+        )
         config = spawn_watch_m.load_watch_config(db_file_path)
         assert config == spawn_watch_m.WatchConfig(
-            is_enabled=True, check_interval_duration=check_interval_duration
+            is_enabled=True,
+            check_interval_duration=check_interval_duration,
+            is_costume_search_enabled=True,
         )
 
 

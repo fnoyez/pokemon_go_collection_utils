@@ -38,6 +38,7 @@ The Pokémon to look for, to fill the collection's missing shundos, are download
 - While turned on, the application checks at a set interval for live spawns that will be shundos for the user's account and are on the shundo hunt list, using the pogocoordinates.com service, and sends a Discord message for each such spawn.
 - The service is a third party whose terms allow automated use only within what a single human user would generate: a check is one search, checks are at least 5 minutes apart, and the coordinates are requested once per spawn alerted. Spawns despawning sooner than the interval may be missed.
 - A spawn is alerted once.
+- The watch searches for the costumed shundos missing too when its costume search is turned on: costumed Pokémon spawn during events only, and a search kept to the costumes spawning now holds nothing else.
 - The watch is turned on and off, and its interval set, from the application, without restarting it. The login to the service is renewed from the application as well.
 - The record of checks and alerts is kept for a bounded time.
 

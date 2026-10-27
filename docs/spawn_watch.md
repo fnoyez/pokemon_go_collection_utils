@@ -8,7 +8,7 @@ The spawn watch searches, at a fixed interval, for spawns that will be shundos f
 
 | Call | Use |
 |---|---|
-| `GET /pokemon/catalog?costumes=true` | The service's forms, each with its Pokédex number, its numeric identifier and its game master form name (`TAUROS_PALDEA_AQUA`). Public. |
+| `GET /pokemon/catalog?costumes=true` | The service's forms, each with its Pokédex number, its numeric identifier and its game master form name (`TAUROS_PALDEA_AQUA`), and the costumes spawning now (see [data_sources.md](data_sources.md), *pogocoordinates.com*). Public. |
 | `POST /search` | The spawns matching a search, at most 10 for a logged-in account. Each holds an `encounter_id`, the Pokédex number and form, CP, level, IVs, the town, the despawn time and a `reveal_code`. |
 | `GET /reveal/<reveal_code>` | The spawn's coordinates, as `lat,lng` in `coords`. Public, rate limited per hour. |
 | `GET /users/me` | The logged-in account, which is how a token is checked. |
@@ -26,14 +26,15 @@ A search for shinies of the user's account needs the account's login token, whic
 ## A check
 
 1. Build the search from the hunt list: `species_forms` holds the service's identifier of every form the hunt list's entries stand for, matched by Pokédex number and game master form name; a species having an entry none of whose forms the service lists is asked for whole, in `pokemon_ids`. The search asks for shinies of the account (`shiny_only`), a 100% minimum IV, sorted by IV. A search on a form matches the spawns the service reports without a form, such as every ordinary Zorua for `ZORUA_NORMAL`.
+   With the costume search on, the search also holds the costumed Pokémon the same hunt list rules select on the Costumed shundos board, whose costume spawns now: a costume worn on a form by its `costume_id`, a costume form by its form identifier. A costumed Pokémon identified by its Bulbapedia code is left out, the service naming costumes by the game's names only.
 2. Search.
-3. Match each spawn to a hunt list entry. A spawn without a form is the form whose service name ends in `_NORMAL`, or the species' only form; one with a form is matched through the service's catalog by form name, suffix or identifier, ignoring case and punctuation: the service writes `Alola` for the suffix `ALOLA`. A spawn matching no hunt list entry is dropped, and so is one despawning within a minute. A spawn whose form matches nothing in the service's catalog is kept when its species has an entry on the hunt list, with the form as the service gives it in the alert, rather than being dropped on a form name the matching does not know.
+3. Match each spawn to a hunt list entry. A spawn without a form is the form whose service name ends in `_NORMAL`, or the species' only form; one with a form is matched through the service's catalog by form name, suffix or identifier, ignoring case and punctuation: the service writes `Alola` for the suffix `ALOLA`. A spawn matching no hunt list entry is dropped, and so is one despawning within a minute. A spawn whose form matches nothing in the service's catalog is kept when its species has an entry on the hunt list, with the form as the service gives it in the alert, rather than being dropped on a form name the matching does not know. A spawn wearing a costume, by its `costume_id` or `costume`, or of a costume form is matched to the costumed Pokémon searched for alone, and dropped otherwise: it is never the ordinary Pokémon of the hunt list.
 4. Leave out the spawns already alerted, by `encounter_id`.
 5. Reveal the coordinates of each new spawn. A spawn the service does not reveal keeps its `/reveal/` link instead, and a reveal refused for its rate (429) leaves the following spawns of the check with their link.
 6. Send one Discord message per new spawn, with its Pokémon, IVs, CP, level, town, time left, its coordinates and the local time there, and record it as alerted. The local time comes from the time zone the coordinates fall in, found offline by `timezonefinder`; a spawn left with its link has none. The messages are sent in order and stop at the first that fails to send, which leaves it and the following spawns unrecorded, so the next check alerts them again.
 7. Record the check, and delete the checks and alerts older than the retention period (7 days).
 
-The service's catalog is kept as a snapshot in the source snapshots folder, fetched again when it is a day old.
+The service's catalog is kept as a snapshot in the source snapshots folder, fetched again when it is an hour old, which is how soon a costume starting to spawn is searched for.
 
 ## Timing
 
@@ -46,7 +47,7 @@ The service's catalog is kept as a snapshot in the source snapshots folder, fetc
 
 ## Storage
 
-- `SPAWN_WATCH_CONFIG` — one row: whether the watch is on, and the interval.
+- `SPAWN_WATCH_CONFIG` — one row: whether the watch is on, whether it searches for costumed Pokémon too, and the interval.
 - `SPAWN_CHECK` — one row per check: its time, status, spawns found and alerts sent, and a note on failure.
 - `SPAWN_ALERT` — one row per spawn alerted, by `encounter_id`: the entry, the spawn's details, its despawn time, its coordinates and reveal link, and when it was alerted.
 - `~/.pokemon_go_collection/pogocoordinates_browser_profile/` — the browser profile used to log in.

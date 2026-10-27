@@ -33,6 +33,12 @@ class ServiceForm:
     # The form name without its species prefix; None for an ordinary form.
     form_suffix: str | None
     is_costume: bool
+    # The game's numeric identifier and name of the costume worn on the form,
+    # which the service lists only while it spawns; None for a form.
+    costume_id: int | None = None
+    costume_name: str | None = None
+    # Whether the costume, or the costume form, spawns now.
+    is_live: bool = False
 
 
 @dataclasses.dataclass(frozen=True)
@@ -49,6 +55,10 @@ class Spawn:
     location: str
     despawn_time: datetime.datetime
     reveal_code: str
+    # The costume worn, by the game's numeric identifier and name; None without
+    # a costume.
+    costume_id: int | None = None
+    costume: str | None = None
 
 
 def fetch_form_catalog_content():
@@ -64,6 +74,9 @@ def parse_form_catalog(content):
             form_name=row["form_name"],
             form_suffix=row["form_suffix"],
             is_costume=bool(row.get("costume")),
+            costume_id=row.get("costume_id"),
+            costume_name=row.get("costume_name"),
+            is_live=bool(row.get("live")),
         )
         for row in content
     ]
@@ -118,6 +131,8 @@ def parse_search_results(content):
             location=row["location"],
             despawn_time=datetime.datetime.fromisoformat(row["despawn_at"]),
             reveal_code=row["reveal_code"],
+            costume_id=row["costume_id"],
+            costume=row["costume"],
         )
         for row in content["results"]
     ]

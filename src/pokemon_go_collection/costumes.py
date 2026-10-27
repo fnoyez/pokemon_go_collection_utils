@@ -42,6 +42,9 @@ class CostumedPokemon:
     leekduck_asset_name: str | None
     # The codes of the Bulbapedia sprites standing for it.
     bulbapedia_codes: tuple[str, ...]
+    # The year its costume belongs to: the one in the costume's name, or the
+    # first one another Pokémon wore it in; None when neither gives one.
+    costume_year: int | None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -57,6 +60,7 @@ class CostumeCatalog:
 def build_costume_catalog(
     national_dex_species,
     game_master,
+    form_overrides,
     icons,
     shiny_releases,
     event_pokemon_rows,
@@ -68,7 +72,7 @@ def build_costume_catalog(
         species.dex_number: species.name for species in national_dex_species
     }
     costume_form_keys = _find_costume_form_keys(
-        game_master, species_ids, costume_matches
+        game_master, species_ids, form_overrides, costume_matches
     )
 
     icon_file_names = _find_icon_file_names(icons, costume_form_keys)
@@ -86,6 +90,14 @@ def build_costume_catalog(
         if sprite_key not in sprite_release_dates:
             continue
         key = _build_match_key(match)
+        # A form a match names without a costume, which an override makes a
+        # catalog entry, is no costumed Pokémon: Armored Mewtwo.
+        if (
+            key.form_suffix is not None
+            and key.costume is None
+            and (key.dex_number, key.form_suffix) not in costume_form_keys
+        ):
+            continue
         release_date = match.release_date or sprite_release_dates[sprite_key]
         if release_date is not None and (
             key not in release_dates
@@ -100,6 +112,7 @@ def build_costume_catalog(
             bulbapedia_labels.setdefault(key, row_labels[sprite_key])
 
     keys = set(icon_file_names) | set(leekduck_shiny_releases) | set(release_dates)
+    costume_years = find_costume_years(keys, release_dates)
     costumed_pokemons = [
         CostumedPokemon(
             costumed_pokemon_id=build_costumed_pokemon_id(key, species_ids),
@@ -126,6 +139,7 @@ def build_costume_catalog(
                 else None
             ),
             bulbapedia_codes=tuple(bulbapedia_codes[key]),
+            costume_year=costume_years[key],
         )
         for key in keys
     ]
@@ -149,11 +163,12 @@ def build_costume_catalog(
     )
 
 
-def _find_costume_form_keys(game_master, species_ids, costume_matches):
+def _find_costume_form_keys(game_master, species_ids, form_overrides, costume_matches):
     """Return the (dex number, form suffix) of every costume form.
 
     They are the forms the game master flags as costumes, and those a match
-    names without a costume, which the game master does not flag.
+    names without a costume, which the game master does not flag, but for the
+    forms an override makes catalog entries.
     """
     dex_numbers = {form.form_id: form.dex_number for form in game_master.forms}
     costume_form_keys = {
@@ -169,7 +184,12 @@ def _find_costume_form_keys(game_master, species_ids, costume_matches):
         for match in costume_matches
         if match.form_suffix is not None and match.costume is None
     )
-    return costume_form_keys
+    return {
+        (dex_number, form_suffix)
+        for dex_number, form_suffix in costume_form_keys
+        if dex_number not in species_ids
+        or f"{species_ids[dex_number]}_{form_suffix}" not in form_overrides
+    }
 
 
 def _find_icon_file_names(icons, costume_form_keys):
@@ -330,6 +350,37 @@ def _build_match_key(match):
     return CostumedPokemonKey(match.dex_number, match.form_suffix, match.costume)
 
 
+def find_costume_years(keys, release_dates):
+    """Return the year each costumed Pokémon's costume belongs to.
+
+    It is the year in the costume's name (`FALL_2018`), or the first year a
+    costumed Pokémon wore that costume in an event (`ONE_YEAR_ANNIVERSARY`,
+    2017 for Pikachu), or None.
+    """
+    event_years = collections.defaultdict(list)
+    for key, release_date in release_dates.items():
+        if release_date is not None and _find_costume_name(key) is not None:
+            event_years[_find_costume_name(key)].append(release_date.year)
+    costume_years = {}
+    for key in keys:
+        costume_name = _find_costume_name(key)
+        name_year_match = (
+            re.search(r"20\d\d", costume_name) if costume_name is not None else None
+        )
+        if name_year_match is not None:
+            costume_years[key] = int(name_year_match[0])
+        elif event_years[costume_name]:
+            costume_years[key] = min(event_years[costume_name])
+        else:
+            costume_years[key] = None
+    return costume_years
+
+
+def _find_costume_name(key):
+    """Return the game's name of the costume, or of the costume form; None when no source gives it."""
+    return key.costume or (key.form_suffix if key.bulbapedia_code is None else None)
+
+
 def build_costumed_pokemon_id(key, species_ids):
     """Return `PIKACHU.HOLIDAY_2016`, `PIKACHU_FALL_2019` for a costume form, or
     `ZUBAT.TopHat` from Bulbapedia's code for a costumed Pokémon no other source
@@ -372,4 +423,16 @@ def _sort_key(costumed_pokemon):
         costumed_pokemon.key.dex_number,
         costumed_pokemon.release_date or datetime.date.max,
         costumed_pokemon.name,
+    )
+
+
+def is_unreleasable(costumed_pokemon, today):
+    """Tell whether nothing suggests the costumed Pokémon will be released.
+
+    It is in no event, and its costume belongs to a year before today's.
+    """
+    return (
+        costumed_pokemon.release_date is None
+        and costumed_pokemon.costume_year is not None
+        and costumed_pokemon.costume_year < today.year
     )

@@ -456,6 +456,50 @@ def test_build_catalog_splits_a_species_whose_base_form_an_override_chooses():
     ]
 
 
+def test_build_catalog_makes_an_entry_of_a_costume_form_an_override_makes_distinct():
+    national_dex_species = [
+        national_dex_m.Species(
+            dex_number=150,
+            identifier="mewtwo",
+            name="Mewtwo",
+            evolves_from_dex_number=None,
+            is_baby=False,
+        )
+    ]
+    game_master = game_master_m.GameMaster(
+        forms=(
+            make_form("MEWTWO", "MEWTWO", 150, (300, 182, 214), ("PSYCHIC",)),
+            make_form("MEWTWO_NORMAL", "MEWTWO", 150, (300, 182, 214), ("PSYCHIC",)),
+            make_form("MEWTWO_A", "MEWTWO", 150, (182, 278, 214), ("PSYCHIC",)),
+        ),
+        costume_form_ids=frozenset({"MEWTWO_A"}),
+        cp_multipliers=(),
+        timestamp=datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc),
+    )
+    form_overrides = {
+        "MEWTWO_A": overrides_m.FormOverride(
+            form_id="MEWTWO_A",
+            decision=overrides_m.FormDecision.DISTINCT,
+            target_form_id=None,
+            variant_region=None,
+        )
+    }
+
+    entries = catalog_m.build_catalog(
+        national_dex_species,
+        game_master,
+        form_overrides,
+        pvpoke_species=[],
+        shiny_releases=[],
+        release_overrides={},
+    )
+
+    assert [(entry.entry_id, entry.name) for entry in entries] == [
+        ("MEWTWO", "Mewtwo"),
+        ("MEWTWO_A", "Mewtwo (Armored)"),
+    ]
+
+
 def test_build_catalog_names_a_form_by_its_symbol():
     game_master = game_master_m.GameMaster(
         forms=tuple(
@@ -581,6 +625,12 @@ def get_build_form_label_test_data():
             "form_id": "VIVILLON_POKEBALL",
             "species_id": "VIVILLON",
             "expected_label": "Poké Ball",
+        },
+        {
+            "id": "suffix-another-species-uses-named-by-form",
+            "form_id": "MEWTWO_A",
+            "species_id": "MEWTWO",
+            "expected_label": "Armored",
         },
         {
             "id": "number-named-for-what-it-counts",

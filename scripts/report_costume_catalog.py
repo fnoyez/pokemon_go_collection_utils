@@ -67,6 +67,7 @@ def main():
     costume_catalog = costumes_m.build_costume_catalog(
         national_dex_m.load_national_dex(cfg.data_folder_path / "national_dex.csv"),
         game_master_m.load_game_master(cfg.game_master_repository_folder_path),
+        overrides_m.load_form_overrides(cfg.data_folder_path / "form_overrides.csv"),
         pogo_assets_m.list_icons(cfg.pogo_assets_repository_folder_path),
         leekduck_m.parse_shiny_data(leekduck_content),
         bulbapedia_m.parse_event_pokemon(bulbapedia_content.decode("utf-8")),
@@ -132,11 +133,18 @@ def build_report(costume_catalog, today):
             if c.key.bulbapedia_code is not None
         ),
         "",
-        "In no Bulbapedia event:",
+        "In no Bulbapedia event, unreleasable:",
         *(
             f"- {c.costumed_pokemon_id}: {c.name} ({' + '.join(find_sources(c))})"
             for c in costumed_pokemons
-            if c.release_date is None
+            if costumes_m.is_unreleasable(c, today)
+        ),
+        "",
+        "In no Bulbapedia event, not released yet:",
+        *(
+            f"- {c.costumed_pokemon_id}: {c.name} ({' + '.join(find_sources(c))})"
+            for c in costumed_pokemons
+            if c.release_date is None and not costumes_m.is_unreleasable(c, today)
         ),
         "",
         "Bulbapedia sprites data/costume_matches.csv has no line for:",

@@ -24,6 +24,9 @@ _REGIONAL_FORM_TOKEN_ADJECTIVES = {
     "PALDEA": "Paldean",
 }
 
+# The labels of forms whose suffix another species uses for another form: `A`
+# is Armored Mewtwo, and Unown's A.
+_FORM_ID_LABELS = {"MEWTWO_A": "Armored"}
 # How a form suffix reads in an entry's name, where its words capitalized
 # would not: a symbol, a small word, a spelling of the games' own.
 _FORM_SUFFIX_LABELS = {
@@ -252,8 +255,11 @@ class _SpeciesLayout:
 
 
 def _lay_out_species(species, species_forms, costume_form_ids, form_overrides):
+    # A costume form is no entry, unless an override makes it a Pokémon of its own.
     forms = tuple(
-        form for form in species_forms if form.form_id not in costume_form_ids
+        form
+        for form in species_forms
+        if form.form_id not in costume_form_ids or form.form_id in form_overrides
     )
     if not forms:
         return _SpeciesLayout(
@@ -507,6 +513,8 @@ def _build_form_label(form):
 
 def build_form_label(form_id, species_id):
     """Name a form from its suffix: `TAUROS_PALDEA_AQUA` reads `Paldean Aqua`."""
+    if form_id in _FORM_ID_LABELS:
+        return _FORM_ID_LABELS[form_id]
     suffix = find_form_suffix(form_id, species_id)
     if suffix in _FORM_SUFFIX_LABELS:
         return _FORM_SUFFIX_LABELS[suffix]

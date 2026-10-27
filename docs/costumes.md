@@ -10,7 +10,7 @@ A costumed Pokémon is a Pokémon of a species, or of one of its forms, wearing 
 - `PIKACHU_FALL_2019`, the form's identifier, for a costume form;
 - `ZUBAT.TopHat`, with Bulbapedia's code, for a costumed Pokémon whose game name no source gives yet.
 
-The costume forms are those the game master flags `isCostume`, and those `data/costume_matches.csv` names without a costume, which the game master does not flag: the clones of the first movie, Psyduck's swim ring.
+The costume forms are those the game master flags `isCostume`, and those `data/costume_matches.csv` names without a costume, which the game master does not flag: the clones of the first movie, Psyduck's swim ring. A costume form an override makes a catalog entry, such as Armored Mewtwo, is no costumed Pokémon (see [catalog.md](catalog.md), *Catalog entries*).
 
 ## The sources merged
 
@@ -31,6 +31,7 @@ Bulbapedia names a costume by an image code of its own, which may stand for diff
 ## Release dates
 
 - **Released**: the first Bulbapedia event the costumed Pokémon appeared in. An event noted `Pikachu only` leaves out the row's other species, and one noted `Festive Pichu debut` leaves Pichu out of the events before it. A Pokémon obtained only by evolution takes the date of its debut when an event notes one, and the first date of the Pokémon it evolves from otherwise. A date ahead of today is an announced release; a costumed Pokémon in no event has no release date.
+- **Unreleasable**: a costumed Pokémon in no event whose costume belongs to a year before today's, which nothing suggests will be released: Pichu in the cap of fall 2018, Mewtwo in Pikachu's cap of the first anniversary. The costume's year is the one in its name (`FALL_2018`), or else the first year a Pokémon wore it in an event (`ONE_YEAR_ANNIVERSARY`, worn by Pikachu in 2017). A costumed Pokémon in no event and of no past year is not released yet, like any other.
 - **Shiny released**: the date LeekDuck gives its shiny, or its release date when that is later, since LeekDuck dates some costumed shinies by their species' shiny. A costumed Pokémon LeekDuck lists no shiny of has none.
 
 ## Names and order
@@ -52,4 +53,4 @@ The report lists what calls for a change to `data/costume_matches.csv`:
 - **Bulbapedia sprites without a line**: a costume new to Bulbapedia, to match.
 - **Lines standing for no Bulbapedia sprite**: a sprite Bulbapedia renamed or removed.
 - **Costumed Pokémon named by Bulbapedia only**: once pogo_assets or LeekDuck names one, its line takes the game's name.
-- **Costumed Pokémon in no Bulbapedia event**: those found only in the game's files, and those a source names differently from the line matching them, which then needs the new name.
+- **Costumed Pokémon in no Bulbapedia event**, unreleasable or not released yet: those found only in the game's files, and those a source names differently from the line matching them, which then needs the new name.

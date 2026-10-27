@@ -226,6 +226,7 @@ def test_build_costume_catalog_merges_the_sources():
     national_dex_species = [
         national_dex_m.Species(25, "pikachu", "Pikachu", 172, False),
         national_dex_m.Species(41, "zubat", "Zubat", None, False),
+        national_dex_m.Species(150, "mewtwo", "Mewtwo", None, False),
     ]
     game_master = game_master_m.GameMaster(
         forms=(
@@ -233,8 +234,10 @@ def test_build_costume_catalog_merges_the_sources():
             make_form("PIKACHU_FALL_2019", "PIKACHU", 25),
             make_form("PIKACHU_COPY_2019", "PIKACHU", 25),
             make_form("ZUBAT", "ZUBAT", 41),
+            make_form("MEWTWO", "MEWTWO", 150),
+            make_form("MEWTWO_A", "MEWTWO", 150),
         ),
-        costume_form_ids=frozenset({"PIKACHU_FALL_2019"}),
+        costume_form_ids=frozenset({"PIKACHU_FALL_2019", "MEWTWO_A"}),
         cp_multipliers=(),
         timestamp=datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
     )
@@ -309,6 +312,12 @@ def test_build_costume_catalog_merges_the_sources():
             label="Top hat",
         ),
         make_row(
+            [bulbapedia_m.Sprite(150, "A", "Mewtwo")],
+            [],
+            [HOLIDAY_2018],
+            label="Armored Mewtwo",
+        ),
+        make_row(
             [bulbapedia_m.Sprite(25, "Unmatched", "Pikachu")],
             [],
             [HOLIDAY_2017],
@@ -321,11 +330,22 @@ def test_build_costume_catalog_merges_the_sources():
         make_match(25, "Copy2019", "COPY_2019", None),
         make_match(41, "TopHat", None, None),
         make_match(25, "Gone", None, "GONE"),
+        # A costume form an override makes a catalog entry.
+        make_match(150, "A", "A", None),
     ]
+    form_overrides = {
+        "MEWTWO_A": overrides_m.FormOverride(
+            form_id="MEWTWO_A",
+            decision=overrides_m.FormDecision.DISTINCT,
+            target_form_id=None,
+            variant_region=None,
+        )
+    }
 
     costume_catalog = costumes_m.build_costume_catalog(
         national_dex_species,
         game_master,
+        form_overrides,
         icons,
         shiny_releases,
         event_pokemon_rows,
@@ -345,6 +365,7 @@ def test_build_costume_catalog_merges_the_sources():
             ),
             leekduck_asset_name="pm25.cHOLIDAY_2016",
             bulbapedia_codes=("Holiday2016",),
+            costume_year=2016,
         ),
         costumes_m.CostumedPokemon(
             costumed_pokemon_id="PIKACHU_COPY_2019",
@@ -355,6 +376,7 @@ def test_build_costume_catalog_merges_the_sources():
             pogo_assets_icon_file_names=("pm25.fCOPY_2019.icon.png", None),
             leekduck_asset_name=None,
             bulbapedia_codes=("Copy2019",),
+            costume_year=2019,
         ),
         costumes_m.CostumedPokemon(
             costumed_pokemon_id="PIKACHU.FEB_2019",
@@ -368,6 +390,7 @@ def test_build_costume_catalog_merges_the_sources():
             ),
             leekduck_asset_name=None,
             bulbapedia_codes=(),
+            costume_year=2019,
         ),
         costumes_m.CostumedPokemon(
             costumed_pokemon_id="PIKACHU_FALL_2019",
@@ -378,6 +401,7 @@ def test_build_costume_catalog_merges_the_sources():
             pogo_assets_icon_file_names=None,
             leekduck_asset_name="pm25.fFALL_2019",
             bulbapedia_codes=(),
+            costume_year=2019,
         ),
         costumes_m.CostumedPokemon(
             costumed_pokemon_id="ZUBAT.TopHat",
@@ -388,6 +412,7 @@ def test_build_costume_catalog_merges_the_sources():
             pogo_assets_icon_file_names=None,
             leekduck_asset_name=None,
             bulbapedia_codes=("TopHat",),
+            costume_year=None,
         ),
     )
     assert costume_catalog.unmatched_sprites == (
@@ -417,3 +442,68 @@ def make_match(dex_number, bulbapedia_code, form_suffix, costume):
         costume=costume,
         release_date=None,
     )
+
+
+def get_is_unreleasable_test_data():
+    today = datetime.date(2026, 10, 27)
+    test_cases = [
+        {
+            "id": "costume-of-a-past-year-in-no-event",
+            "release_date": None,
+            "costume_year": 2018,
+            "today": today,
+            "expected_output": True,
+        },
+        {
+            "id": "costume-of-this-year-in-no-event",
+            "release_date": None,
+            "costume_year": 2026,
+            "today": today,
+            "expected_output": False,
+        },
+        {
+            "id": "costume-of-no-known-year",
+            "release_date": None,
+            "costume_year": None,
+            "today": today,
+            "expected_output": False,
+        },
+        {
+            "id": "announced",
+            "release_date": datetime.date(2027, 2, 13),
+            "costume_year": 2018,
+            "today": today,
+            "expected_output": False,
+        },
+    ]
+
+    return [
+        pytest.param(
+            test_case["release_date"],
+            test_case["costume_year"],
+            test_case["today"],
+            test_case["expected_output"],
+            id=test_case["id"],
+        )
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize(
+    "release_date,costume_year,today,expected_output",
+    get_is_unreleasable_test_data(),
+)
+def test_is_unreleasable(release_date, costume_year, today, expected_output):
+    costumed_pokemon = costumes_m.CostumedPokemon(
+        costumed_pokemon_id="PICHU.FALL_2018",
+        key=costumes_m.CostumedPokemonKey(172, None, "FALL_2018"),
+        name="Pichu (Fall 2018)",
+        release_date=release_date,
+        shiny_release_date=None,
+        pogo_assets_icon_file_names=None,
+        leekduck_asset_name=None,
+        bulbapedia_codes=(),
+        costume_year=costume_year,
+    )
+
+    assert costumes_m.is_unreleasable(costumed_pokemon, today) == expected_output

@@ -175,3 +175,4 @@ UNOWN_Y,distinct,,,Each Unown character is collected as a shiny of its own
 UNOWN_Z,distinct,,,Each Unown character is collected as a shiny of its own
 UNOWN_EXCLAMATION_POINT,distinct,,,Each Unown character is collected as a shiny of its own
 UNOWN_QUESTION_MARK,distinct,,,Each Unown character is collected as a shiny of its own
+MEWTWO_A,distinct,,,"Armored Mewtwo is a Pokémon of its own, with stats of its own, though the game master flags it as a costume"

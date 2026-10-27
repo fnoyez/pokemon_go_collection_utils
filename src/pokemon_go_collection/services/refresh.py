@@ -5,8 +5,11 @@ import logging
 import urllib.error
 
 from pokemon_go_collection import catalog as catalog_m
+from pokemon_go_collection import costumes as costumes_m
 from pokemon_go_collection import db as db_m
 from pokemon_go_collection import pvp_ranks as pvp_ranks_m
+from pokemon_go_collection import regions as regions_m
+from pokemon_go_collection.sources import bulbapedia as bulbapedia_m
 from pokemon_go_collection.sources import game_master as game_master_m
 from pokemon_go_collection.sources import git_repository as git_repository_m
 from pokemon_go_collection.sources import http as http_m
@@ -14,6 +17,7 @@ from pokemon_go_collection.sources import icons as icons_m
 from pokemon_go_collection.sources import leekduck as leekduck_m
 from pokemon_go_collection.sources import national_dex as national_dex_m
 from pokemon_go_collection.sources import overrides as overrides_m
+from pokemon_go_collection.sources import pogo_assets as pogo_assets_m
 from pokemon_go_collection.sources import pvpoke as pvpoke_m
 
 logger = logging.getLogger(__name__)
@@ -64,11 +68,15 @@ def run_refresh(cfg, now):
     warnings = []
     game_master_timestamp = None
     try:
-        pull_error_message = git_repository_m.pull_repository(
-            cfg.game_master_repository_folder_path
-        )
-        if pull_error_message is not None:
-            warnings.append(pull_error_message)
+        for repository_folder_path in (
+            cfg.game_master_repository_folder_path,
+            cfg.pogo_assets_repository_folder_path,
+        ):
+            pull_error_message = git_repository_m.pull_repository(
+                repository_folder_path
+            )
+            if pull_error_message is not None:
+                warnings.append(pull_error_message)
         pvpoke_content = fetch_source_snapshot(
             pvpoke_m.PVPOKE_GAME_MASTER_URL,
             cfg.sources_folder_path / "pvpoke_game_master.json",
@@ -79,28 +87,63 @@ def run_refresh(cfg, now):
             cfg.sources_folder_path / "leekduck_shiny_data.json",
             warnings,
         )
+        bulbapedia_content = fetch_source_snapshot(
+            bulbapedia_m.EVENT_POKEMON_URL,
+            cfg.sources_folder_path / "bulbapedia_event_pokemon.wiki",
+            warnings,
+        )
 
         game_master = game_master_m.load_game_master(
             cfg.game_master_repository_folder_path
         )
         game_master_timestamp = game_master.timestamp.isoformat()
+        national_dex_species = national_dex_m.load_national_dex(
+            cfg.data_folder_path / "national_dex.csv"
+        )
+        form_overrides = overrides_m.load_form_overrides(
+            cfg.data_folder_path / "form_overrides.csv"
+        )
+        shiny_releases = leekduck_m.parse_shiny_data(leekduck_content)
         entries = catalog_m.build_catalog(
-            national_dex_m.load_national_dex(cfg.data_folder_path / "national_dex.csv"),
+            national_dex_species,
             game_master,
-            overrides_m.load_form_overrides(
-                cfg.data_folder_path / "form_overrides.csv"
-            ),
+            form_overrides,
             pvpoke_m.parse_pvpoke_game_master(pvpoke_content),
-            leekduck_m.parse_shiny_data(leekduck_content),
+            shiny_releases,
             overrides_m.load_release_overrides(
                 cfg.data_folder_path / "release_overrides.csv"
             ),
         )
+        costume_catalog = costumes_m.build_costume_catalog(
+            national_dex_species,
+            game_master,
+            form_overrides,
+            pogo_assets_m.list_icons(cfg.pogo_assets_repository_folder_path),
+            shiny_releases,
+            bulbapedia_m.parse_event_pokemon(bulbapedia_content.decode("utf-8")),
+            overrides_m.load_costume_matches(
+                cfg.data_folder_path / "costume_matches.csv"
+            ),
+        )
+        warnings.extend(build_costume_match_warnings(costume_catalog))
         icon_file_names = icons_m.download_missing_icons(
             entries, cfg.icons_folder_path, now.date()
         )
+        costumed_pokemon_icon_file_names = icons_m.ensure_costumed_pokemon_icons(
+            costume_catalog.costumed_pokemons,
+            cfg.pogo_assets_repository_folder_path
+            / pogo_assets_m.ICONS_FOLDER_RELATIVE_PATH,
+            cfg.icons_folder_path,
+            now.date(),
+        )
         with db_m.db_conn(cfg.db_file_path) as conn:
             write_catalog(conn, entries, icon_file_names)
+            write_costumed_pokemons(
+                conn,
+                costume_catalog.costumed_pokemons,
+                costumed_pokemon_icon_file_names,
+                entries,
+            )
             write_cp_multipliers(
                 conn, pvp_ranks_m.build_cp_multipliers(game_master.cp_multipliers)
             )
@@ -144,6 +187,31 @@ def fetch_source_snapshot(url, snapshot_file_path, warnings):
         return snapshot_file_path.read_bytes()
     snapshot_file_path.write_bytes(content)
     return content
+
+
+def build_costume_match_warnings(costume_catalog):
+    """Return a warning for each change data/costume_matches.csv calls for.
+
+    `scripts/report_costume_catalog.py` reports them in full.
+    """
+    warnings = []
+    if costume_catalog.unmatched_sprites:
+        sprite_names = ", ".join(
+            f"{sprite.dex_number} {sprite.code}"
+            for sprite in costume_catalog.unmatched_sprites
+        )
+        warnings.append(
+            f"Bulbapedia sprites without a line in data/costume_matches.csv: {sprite_names}"
+        )
+    if costume_catalog.unused_matches:
+        match_names = ", ".join(
+            f"{match.dex_number} {match.bulbapedia_code}"
+            for match in costume_catalog.unused_matches
+        )
+        warnings.append(
+            f"Lines of data/costume_matches.csv standing for no Bulbapedia sprite: {match_names}"
+        )
+    return warnings
 
 
 def write_catalog(conn, entries, icon_file_names):
@@ -294,6 +362,156 @@ def write_catalog(conn, entries, icon_file_names):
             for form_order, battle_form in enumerate(entry.battle_forms)
         ],
     )
+
+
+def write_costumed_pokemons(conn, costumed_pokemons, icon_file_names, entries):
+    """Replace the costumed Pokémon rows, keeping each one's identifier.
+
+    A costumed shundo owned on a costumed Pokémon identified by its Bulbapedia
+    code moves to the one standing for the same sprite, once a source gives its
+    game name: `ZUBAT.TopHat` becomes `ZUBAT.<costume>`. Refuses to drop any
+    other costumed Pokémon the collection owns, as `write_catalog` does.
+    """
+    new_ids = {
+        costumed_pokemon.costumed_pokemon_id for costumed_pokemon in costumed_pokemons
+    }
+    # The species' class and baby status are those of its base entry, which
+    # comes first among the entries of its number.
+    base_entries = {}
+    for entry in entries:
+        base_entries.setdefault(entry.dex_number, entry)
+    conn.executemany(
+        """
+        INSERT INTO costumed_pokemon (
+          costumed_pokemon_id, dex_number, name, region, display_order,
+          form_suffix, costume, bulbapedia_code, release_date, shiny_release_date,
+          costume_year, pokemon_class, is_baby, icon_file_name
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (costumed_pokemon_id) DO UPDATE SET
+          dex_number = excluded.dex_number,
+          name = excluded.name,
+          region = excluded.region,
+          display_order = excluded.display_order,
+          form_suffix = excluded.form_suffix,
+          costume = excluded.costume,
+          bulbapedia_code = excluded.bulbapedia_code,
+          release_date = excluded.release_date,
+          shiny_release_date = excluded.shiny_release_date,
+          costume_year = excluded.costume_year,
+          pokemon_class = excluded.pokemon_class,
+          is_baby = excluded.is_baby,
+          icon_file_name = excluded.icon_file_name
+        """,
+        [
+            (
+                costumed_pokemon.costumed_pokemon_id,
+                costumed_pokemon.key.dex_number,
+                costumed_pokemon.name,
+                regions_m.find_region(costumed_pokemon.key.dex_number).value,
+                display_order,
+                costumed_pokemon.key.form_suffix,
+                costumed_pokemon.key.costume,
+                costumed_pokemon.key.bulbapedia_code,
+                _format_date(costumed_pokemon.release_date),
+                _format_date(costumed_pokemon.shiny_release_date),
+                costumed_pokemon.costume_year,
+                _find_pokemon_class_value(
+                    base_entries.get(costumed_pokemon.key.dex_number)
+                ),
+                int(
+                    costumed_pokemon.key.dex_number in base_entries
+                    and base_entries[costumed_pokemon.key.dex_number].is_baby
+                ),
+                icon_file_names[costumed_pokemon.costumed_pokemon_id],
+            )
+            for display_order, costumed_pokemon in enumerate(costumed_pokemons)
+        ],
+    )
+
+    lost_owned_rows = conn.execute(
+        """
+        SELECT s.costumed_pokemon_id, c.dex_number, c.bulbapedia_code
+        FROM costumed_shundo AS s
+        JOIN costumed_pokemon AS c USING (costumed_pokemon_id)
+        """
+    ).fetchall()
+    new_ids_by_sprite = {
+        (costumed_pokemon.key.dex_number, bulbapedia_code): (
+            costumed_pokemon.costumed_pokemon_id
+        )
+        for costumed_pokemon in costumed_pokemons
+        for bulbapedia_code in costumed_pokemon.bulbapedia_codes
+    }
+    lost_owned_ids = []
+    for owned_id, dex_number, bulbapedia_code in lost_owned_rows:
+        if owned_id in new_ids:
+            continue
+        if (dex_number, bulbapedia_code) in new_ids_by_sprite:
+            new_id = new_ids_by_sprite[(dex_number, bulbapedia_code)]
+            conn.execute(
+                """
+                UPDATE costumed_shundo
+                SET costumed_pokemon_id = ?
+                WHERE costumed_pokemon_id = ?
+                """,
+                (new_id, owned_id),
+            )
+            logger.info(f"Costumed shundo {owned_id} moved to {new_id}")
+        else:
+            lost_owned_ids.append(owned_id)
+    if lost_owned_ids:
+        raise CatalogRefreshError(
+            f"The new costumed Pokémon drop owned ones: {sorted(lost_owned_ids)}"
+        )
+
+    conn.execute(
+        """
+        DELETE FROM costumed_pokemon_evolution
+        """
+    )
+    current_ids = {
+        row[0]
+        for row in conn.execute(
+            """
+            SELECT costumed_pokemon_id
+            FROM costumed_pokemon
+            """
+        )
+    }
+    conn.executemany(
+        """
+        DELETE FROM costumed_pokemon
+        WHERE costumed_pokemon_id = ?
+        """,
+        [
+            (costumed_pokemon_id,)
+            for costumed_pokemon_id in sorted(current_ids - new_ids)
+        ],
+    )
+    conn.executemany(
+        """
+        INSERT INTO costumed_pokemon_evolution (
+          source_costumed_pokemon_id, target_costumed_pokemon_id
+        )
+        VALUES (?, ?)
+        """,
+        [
+            (costumed_pokemon.costumed_pokemon_id, target_id)
+            for costumed_pokemon in costumed_pokemons
+            for target_id in costumed_pokemon.evolution_target_ids
+        ],
+    )
+
+
+def _format_date(date):
+    return date.isoformat() if date is not None else None
+
+
+def _find_pokemon_class_value(base_entry):
+    if base_entry is None or base_entry.pokemon_class is None:
+        return None
+    return base_entry.pokemon_class.value
 
 
 def write_cp_multipliers(conn, cp_multipliers):

@@ -1,5 +1,6 @@
 import concurrent.futures
 import logging
+import shutil
 import urllib.error
 
 from pokemon_go_collection import catalog as catalog_m
@@ -16,6 +17,7 @@ POGO_ASSETS_ICON_BASE_URL = (
 POKEAPI_SPRITE_BASE_URL = (
     "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon"
 )
+LEEKDUCK_ICON_BASE_URL = "https://cdn.leekduck.com/assets/img/pokemon_icons"
 
 
 def download_missing_icons(entries, icons_folder_path, today, workers_nb=16):
@@ -91,3 +93,73 @@ def _fetch_icon(url):
     except urllib.error.URLError as error:
         logger.warning(f"Fetching {url} failed: {error}")
         return None
+
+
+def ensure_costumed_pokemon_icons(
+    costumed_pokemons,
+    pogo_assets_icons_folder_path,
+    icons_folder_path,
+    today,
+    workers_nb=16,
+):
+    """Return the icon file name of each costumed Pokémon, caching the icons not cached yet.
+
+    The icon comes from the pogo_assets clone, or else from LeekDuck. The
+    shiny one is shown once the shiny is released, the normal one until then,
+    as for an entry. A costumed Pokémon with no icon maps to None.
+    """
+    icons_folder_path.mkdir(parents=True, exist_ok=True)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers_nb) as executor:
+        icon_file_names = executor.map(
+            lambda costumed_pokemon: _ensure_costumed_pokemon_icon(
+                costumed_pokemon,
+                pogo_assets_icons_folder_path,
+                icons_folder_path,
+                today,
+            ),
+            costumed_pokemons,
+        )
+        return dict(
+            zip(
+                (
+                    costumed_pokemon.costumed_pokemon_id
+                    for costumed_pokemon in costumed_pokemons
+                ),
+                icon_file_names,
+            )
+        )
+
+
+def _ensure_costumed_pokemon_icon(
+    costumed_pokemon, pogo_assets_icons_folder_path, icons_folder_path, today
+):
+    is_shiny_shown = catalog_m.is_shiny_released(
+        costumed_pokemon.shiny_release_date, today
+    )
+    for is_shiny in (True, False) if is_shiny_shown else (False,):
+        suffix = ".shiny" if is_shiny else ""
+        file_name = f"{costumed_pokemon.costumed_pokemon_id}{suffix}.png"
+        icon_file_path = icons_folder_path / file_name
+        if icon_file_path.exists():
+            return file_name
+        pogo_assets_file_names = costumed_pokemon.pogo_assets_icon_file_names
+        pogo_assets_file_name = (
+            pogo_assets_file_names[int(is_shiny)]
+            if pogo_assets_file_names is not None
+            else None
+        )
+        if pogo_assets_file_name is not None:
+            shutil.copyfile(
+                pogo_assets_icons_folder_path / pogo_assets_file_name, icon_file_path
+            )
+            return file_name
+        if costumed_pokemon.leekduck_asset_name is not None:
+            content = _fetch_icon(
+                f"{LEEKDUCK_ICON_BASE_URL}/{costumed_pokemon.leekduck_asset_name}"
+                f"{'.s' if is_shiny else ''}.icon.png"
+            )
+            if content is not None:
+                icon_file_path.write_bytes(content)
+                return file_name
+    logger.warning(f"No icon found for {costumed_pokemon.costumed_pokemon_id}")
+    return None

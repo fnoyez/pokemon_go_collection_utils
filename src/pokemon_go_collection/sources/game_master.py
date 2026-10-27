@@ -50,6 +50,9 @@ class PokemonForm:
     pokemon_class: PokemonClass | None
     # In game master order.
     temporary_evolutions: tuple[TemporaryEvolution, ...]
+    # The `_NOEVOLVE` costumes the form may evolve while wearing, which keep
+    # it from evolving otherwise.
+    noevolve_costumes_allowed: tuple[str, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -152,6 +155,9 @@ def _build_pokemon_form(dex_number, pokemon_settings):
         evolutions=evolutions,
         pokemon_class=pokemon_class,
         temporary_evolutions=temporary_evolutions,
+        noevolve_costumes_allowed=tuple(
+            pokemon_settings.get("allowNoevolveEvolution", [])
+        ),
     )
 
 

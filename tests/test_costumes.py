@@ -494,16 +494,6 @@ def get_is_unreleasable_test_data():
     get_is_unreleasable_test_data(),
 )
 def test_is_unreleasable(release_date, costume_year, today, expected_output):
-    costumed_pokemon = costumes_m.CostumedPokemon(
-        costumed_pokemon_id="PICHU.FALL_2018",
-        key=costumes_m.CostumedPokemonKey(172, None, "FALL_2018"),
-        name="Pichu (Fall 2018)",
-        release_date=release_date,
-        shiny_release_date=None,
-        pogo_assets_icon_file_names=None,
-        leekduck_asset_name=None,
-        bulbapedia_codes=(),
-        costume_year=costume_year,
+    assert (
+        costumes_m.is_unreleasable(release_date, costume_year, today) == expected_output
     )
-
-    assert costumes_m.is_unreleasable(costumed_pokemon, today) == expected_output

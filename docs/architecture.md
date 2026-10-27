@@ -22,7 +22,7 @@
 - `src/pokemon_go_collection/catalog.py` — combines the sources' records into catalog entries, ordered and with their statuses, following [catalog.md](catalog.md). Pure functions over records, so it is tested without network or database.
 - `src/pokemon_go_collection/costumes.py` — merges the sources' records into the costumed Pokémon, following [costumes.md](costumes.md); pure functions over records, like `catalog.py`.
 - `src/pokemon_go_collection/services/` — `refresh.py` (fetching sources and rebuilding the catalog tables), `shundos.py` (reading and recording the collection), `hunt_list.py` (the shundo hunt list), `spawn_watch.py` (the spawn watch) and `pogocoordinates_login.py` (its login), `pvp_rank_data.py` (the base stats and CP multipliers the PvP ranks tab reads), `backups.py`.
-- `src/pokemon_go_collection/ui_shundos.py` — the Shundos tab.
+- `src/pokemon_go_collection/ui_shundos.py` — the Shundos and Costumed shundos tabs, one board each.
 - `src/pokemon_go_collection/ui_pvp_ranks.py` — the PvP ranks tab.
 - `src/pokemon_go_collection/ui_spawn_watch.py` — the Spawn watch tab; the watch itself is `services/spawn_watch.py`, described in [spawn_watch.md](spawn_watch.md).
 - `src/pokemon_go_collection/components/pokemon_grid/` — the clickable icon grid, a Streamlit component (below).
@@ -53,11 +53,13 @@ The schema is the ordered sequence of modules under `src/pokemon_go_collection/m
 - `CP_MULTIPLIER` — the CP multiplier of every level, whole and half, rebuilt by each refresh from the game master.
 - `POKEMON_EVOLUTION` — the evolutions between entries, one row per (source, target) pair, rebuilt by each refresh.
 - `SHUNDO` — the collection's shundos, one row per owned entry, referring to `POKEMON_ENTRY`.
+- `COSTUMED_POKEMON`, `COSTUMED_POKEMON_EVOLUTION` — the costumed Pokémon of [costumes.md](costumes.md), with their icons, and their evolutions, rebuilt by each refresh like the catalog.
+- `COSTUMED_SHUNDO` — the collection's costumed shundos, one row per owned costumed Pokémon, referring to `COSTUMED_POKEMON`.
 - `CATALOG_REFRESH` — one row per refresh, with the game master timestamp it used and its outcome.
 - `BACKUP_EVENT` — one row per backup taken.
 - `SPAWN_WATCH_CONFIG`, `SPAWN_CHECK`, `SPAWN_ALERT` — the spawn watch's settings and records, described in [spawn_watch.md](spawn_watch.md), *Storage*.
 
-A refresh whose new catalog no longer holds an entry the collection owns fails, naming the entry, rather than deleting what the collection records. A form disappearing from the sources is a change to look into, and `data/form_overrides.csv` is where it is resolved.
+A refresh whose new catalog no longer holds an entry the collection owns fails, naming the entry, rather than deleting what the collection records; so does one dropping an owned costumed Pokémon, but for one identified by its Bulbapedia code, whose shundo moves to the costumed Pokémon of the same sprite once a source gives its game name. A form disappearing from the sources is a change to look into, and `data/form_overrides.csv` is where it is resolved.
 
 ## Backups
 
@@ -67,11 +69,11 @@ The SQLite backup API copies the database while the application runs, one automa
 
 A refresh brings the catalog up to date with its sources:
 
-1. Pull the game master repository (`git pull --ff-only`).
-2. Download the PvPoke game master and the LeekDuck shiny data, replacing their snapshots.
-3. Rebuild the catalog from the sources.
-4. Download the icons missing from the cache.
-5. Write the catalog, with each entry's icon and base stats, to `POKEMON_ENTRY`, the Mega and Primal evolutions to `TEMPORARY_EVOLUTION`, the battle forms to `BATTLE_FORM`, and the CP multipliers to `CP_MULTIPLIER`, in one transaction.
+1. Pull the game master and pogo_assets repositories (`git pull --ff-only`).
+2. Download the PvPoke game master, the LeekDuck shiny data and Bulbapedia's list of event Pokémon, replacing their snapshots.
+3. Rebuild the catalog and the costumed Pokémon from the sources. A Bulbapedia sprite `data/costume_matches.csv` has no line for, or a line standing for no sprite, adds a warning.
+4. Download the icons missing from the cache; a costumed Pokémon's comes from the pogo_assets clone, or else from LeekDuck.
+5. Write the catalog, with each entry's icon and base stats, to `POKEMON_ENTRY`, the Mega and Primal evolutions to `TEMPORARY_EVOLUTION`, the battle forms to `BATTLE_FORM`, the CP multipliers to `CP_MULTIPLIER`, and the costumed Pokémon to `COSTUMED_POKEMON` and `COSTUMED_POKEMON_EVOLUTION`, in one transaction.
 6. Record the refresh in `CATALOG_REFRESH`.
 
 A source that cannot be reached (no network, a site down) leaves its last snapshot in use, and the refresh records a warning; a refresh with no snapshot at all to fall back on fails.

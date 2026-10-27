@@ -15,6 +15,15 @@ More features will follow, each as its own tab of the same application.
 - The Pokémon still lacking a shundo can be listed on their own.
 - Entering the existing state of a large collection has to be fast: a Pokémon is marked as owned, or unmarked, by a single click on its icon, in a grid dense enough to show many Pokémon at once. A dropdown list or a form per Pokémon does not meet this.
 
+### Costumed shundo tracking
+
+- A Costumed shundos tab, next to the Shundos tab, tracks the costumed shundos the same way: the same grid, grouping by region and marking by a click.
+- Every costumed Pokémon known is listed: released, announced, or found only in the game's files, as are the Pokémon of the Shundos tab.
+- Within a species, costumed Pokémon are ordered by the release date of the costumed Pokémon itself, not of its shiny.
+- A costumed Pokémon found only in the game's files, with a costume of a past year, is not expected to be released: it is shown as unreleased in an *Unreleasable* section at the bottom of the tab, apart from those awaiting their release.
+
+The design is in [costumes.md](costumes.md).
+
 ### Shundo hunt list
 
 The Pokémon to look for, to fill the collection's missing shundos, are downloaded from the Shundos tab as a CSV file, `pokemons_to_shundo_hunt.csv`, with two columns: `dex number` and `name`.
@@ -48,7 +57,7 @@ The concepts and the design are in [pvp_ranks.md](pvp_ranks.md).
 
 - Regional forms (Alolan, Galarian, Hisuian, Paldean) are distinct Pokémon: they have their own stats and types, and some start evolutionary lines of their own (Galarian Farfetch'd evolves into Sirfetch'd).
 - Other forms whose stats, types or evolutions differ from the species' base form are distinct Pokémon as well (Deoxys's Attack Forme, Midnight Lycanroc, the Wormadam cloaks).
-- Costumes do not exist for this application: a costumed Pokémon is neither a distinct Pokémon nor a specimen of its species.
+- A costumed Pokémon (Pikachu in a Holiday hat) is not a Pokémon of its species' catalog: costumed shundos are collected apart, on a board of their own (see *Costumed shundo tracking*). A form the game calls a costume but that is a Pokémon of its own, such as Armored Mewtwo, with its own stats, is a distinct Pokémon.
 
 The rules implementing this are in [catalog.md](catalog.md), *Catalog entries*.
 

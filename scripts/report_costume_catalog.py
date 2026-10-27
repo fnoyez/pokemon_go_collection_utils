@@ -137,14 +137,15 @@ def build_report(costume_catalog, today):
         *(
             f"- {c.costumed_pokemon_id}: {c.name} ({' + '.join(find_sources(c))})"
             for c in costumed_pokemons
-            if costumes_m.is_unreleasable(c, today)
+            if costumes_m.is_unreleasable(c.release_date, c.costume_year, today)
         ),
         "",
         "In no Bulbapedia event, not released yet:",
         *(
             f"- {c.costumed_pokemon_id}: {c.name} ({' + '.join(find_sources(c))})"
             for c in costumed_pokemons
-            if c.release_date is None and not costumes_m.is_unreleasable(c, today)
+            if c.release_date is None
+            and not costumes_m.is_unreleasable(c.release_date, c.costume_year, today)
         ),
         "",
         "Bulbapedia sprites data/costume_matches.csv has no line for:",

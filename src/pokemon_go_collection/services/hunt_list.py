@@ -7,6 +7,18 @@ import io
 from pokemon_go_collection import db as db_m
 from pokemon_go_collection.services import shundos as shundos_m
 
+# The evolutions between the Pokémon of each board, as (source, target) pairs.
+_EVOLUTION_QUERIES = {
+    shundos_m.Board.SHUNDOS: """
+        SELECT source_entry_id, target_entry_id
+        FROM pokemon_evolution
+        """,
+    shundos_m.Board.COSTUMED_SHUNDOS: """
+        SELECT source_costumed_pokemon_id, target_costumed_pokemon_id
+        FROM costumed_pokemon_evolution
+        """,
+}
+
 
 def select_hunt_entries(board_entries, evolution_edges):
     """Return, in board order, the entries a caught shundo of which fills a missing entry.
@@ -40,14 +52,9 @@ def select_hunt_entries(board_entries, evolution_edges):
     ]
 
 
-def load_evolution_edges(db_file_path):
+def load_evolution_edges(db_file_path, board):
     with db_m.db_conn(db_file_path) as conn:
-        rows = conn.execute(
-            """
-            SELECT source_entry_id, target_entry_id
-            FROM pokemon_evolution
-            """
-        ).fetchall()
+        rows = conn.execute(_EVOLUTION_QUERIES[board]).fetchall()
     evolution_edges = collections.defaultdict(list)
     for source_entry_id, target_entry_id in rows:
         evolution_edges[source_entry_id].append(target_entry_id)

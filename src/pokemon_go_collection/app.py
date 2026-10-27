@@ -43,11 +43,15 @@ def main():
         _render_sidebar(cfg)
 
     st.title("Pokémon GO Collection")
-    shundos_tab, spawn_watch_tab, pvp_ranks_tab = st.tabs(
-        ["Shundos", "Spawn watch", "PvP ranks"]
+    shundos_tab, costumed_shundos_tab, spawn_watch_tab, pvp_ranks_tab = st.tabs(
+        ["Shundos", "Costumed shundos", "Spawn watch", "PvP ranks"]
     )
     with shundos_tab:
         ui_shundos_m.render_shundos_page(cfg.db_file_path, cfg.icons_folder_path)
+    with costumed_shundos_tab:
+        ui_shundos_m.render_costumed_shundos_page(
+            cfg.db_file_path, cfg.icons_folder_path
+        )
     with spawn_watch_tab:
         ui_spawn_watch_m.render_spawn_watch_page(cfg, check_lock)
     with pvp_ranks_tab:

@@ -10,7 +10,11 @@ from pokemon_go_collection.components.pokemon_grid import (
 from pokemon_go_collection.services import hunt_list as hunt_list_m
 from pokemon_go_collection.services import shundos as shundos_m
 
-_GRID_KEY = "shundo_grid"
+# The session state keys of each board's widgets, so the two tabs keep apart.
+_GRID_KEYS = {
+    shundos_m.Board.SHUNDOS: "shundo_grid",
+    shundos_m.Board.COSTUMED_SHUNDOS: "costumed_shundo_grid",
+}
 
 
 class BoardFilter(enum.Enum):
@@ -33,19 +37,20 @@ def render_shundos_page(db_file_path, icons_folder_path):
         "Click a Pokémon to mark or unmark it as owned as a shundo. Silhouettes are "
         "not released in Pokémon GO, greyed-out ones have no shiny released yet."
     )
-    _render_shundo_board(db_file_path, icons_folder_path)
+    _render_shundo_board(db_file_path, icons_folder_path, shundos_m.Board.SHUNDOS)
 
 
 @st.fragment
-def _render_shundo_board(db_file_path, icons_folder_path):
+def _render_shundo_board(db_file_path, icons_folder_path, board):
     today = datetime.date.today()
-    board_entries = shundos_m.load_board_entries(db_file_path, today)
+    board_entries = shundos_m.load_board_entries(db_file_path, board, today)
     if not board_entries:
         st.info("The catalog is empty: run a refresh from the sidebar.")
         return
 
     _render_totals(board_entries)
-    _render_hunt_list_download(db_file_path, board_entries)
+    if board == shundos_m.Board.SHUNDOS:
+        _render_hunt_list_download(db_file_path, board_entries)
     filter_column, search_column = st.columns([1, 2])
     with filter_column:
         board_filter = BoardFilter(
@@ -53,12 +58,12 @@ def _render_shundo_board(db_file_path, icons_folder_path):
                 "Show",
                 [board_filter.value for board_filter in BoardFilter],
                 default=BoardFilter.ALL.value,
-                key="shundo_board_filter",
+                key=f"{_GRID_KEYS[board]}_filter",
             )
             or BoardFilter.ALL.value
         )
     with search_column:
-        search_text = st.text_input("Search", key="shundo_board_search")
+        search_text = st.text_input("Search", key=f"{_GRID_KEYS[board]}_search")
 
     groups = build_grid_groups(
         board_entries,
@@ -71,8 +76,8 @@ def _render_shundo_board(db_file_path, icons_folder_path):
         return
     pokemon_grid_m.render_pokemon_grid(
         groups,
-        _GRID_KEY,
-        lambda: _apply_grid_changes(db_file_path, today),
+        _GRID_KEYS[board],
+        lambda: _apply_grid_changes(db_file_path, board, today),
     )
 
 
@@ -91,7 +96,8 @@ def _render_totals(board_entries):
 
 def _render_hunt_list_download(db_file_path, board_entries):
     hunt_entries = hunt_list_m.select_hunt_entries(
-        board_entries, hunt_list_m.load_evolution_edges(db_file_path)
+        board_entries,
+        hunt_list_m.load_evolution_edges(db_file_path, shundos_m.Board.SHUNDOS),
     )
     st.download_button(
         f"Download the hunt list ({len(hunt_entries)} Pokémon)",
@@ -110,21 +116,27 @@ def build_grid_groups(board_entries, icon_versions, shown_states, search_text):
     """Group the entries shown by region, each region's variant block in a section of its own.
 
     `icon_versions` maps each icon file name to its version, from
-    `_find_icon_versions`.
+    `_find_icon_versions`. The unreleasable entries make a last group of their
+    own, after the regions.
 
     Each region's summary counts its owned and markable entries over the whole
     board, whatever the filter shows.
     """
     normalized_search_text = search_text.strip().lower()
+
+    def is_shown(entry):
+        return (
+            entry.state in shown_states and normalized_search_text in entry.name.lower()
+        )
+
     groups = []
     for region in regions_m.Region:
-        region_entries = [entry for entry in board_entries if entry.region == region]
-        shown_entries = [
+        region_entries = [
             entry
-            for entry in region_entries
-            if entry.state in shown_states
-            and normalized_search_text in entry.name.lower()
+            for entry in board_entries
+            if entry.region == region and not entry.is_unreleasable
         ]
+        shown_entries = [entry for entry in region_entries if is_shown(entry)]
         if not shown_entries:
             continue
         sections = [
@@ -143,6 +155,25 @@ def build_grid_groups(board_entries, icon_versions, shown_states, search_text):
                 "title": region.value,
                 "summary": _build_region_summary(region_entries),
                 "sections": [section for section in sections if section["entries"]],
+            }
+        )
+    unreleasable_entries = [
+        entry for entry in board_entries if entry.is_unreleasable and is_shown(entry)
+    ]
+    if unreleasable_entries:
+        groups.append(
+            {
+                "title": "Unreleasable",
+                "summary": f"{len(unreleasable_entries)} Pokémon",
+                "sections": [
+                    {
+                        "title": None,
+                        "entries": [
+                            _build_grid_entry(entry, icon_versions)
+                            for entry in unreleasable_entries
+                        ],
+                    }
+                ],
             }
         )
     return groups
@@ -183,6 +214,19 @@ def _find_icon_versions(icons_folder_path):
     }
 
 
-def _apply_grid_changes(db_file_path, today):
-    desired_ownership = st.session_state[_GRID_KEY]["desired_ownership"]
-    shundos_m.apply_desired_ownership(db_file_path, desired_ownership, today)
+def _apply_grid_changes(db_file_path, board, today):
+    desired_ownership = st.session_state[_GRID_KEYS[board]]["desired_ownership"]
+    shundos_m.apply_desired_ownership(db_file_path, board, desired_ownership, today)
+
+
+def render_costumed_shundos_page(db_file_path, icons_folder_path):
+    st.header("Costumed shundos")
+    st.caption(
+        "Click a costumed Pokémon to mark or unmark it as owned as a shundo. "
+        "Silhouettes are not released in Pokémon GO, greyed-out ones have no shiny "
+        "released yet. The unreleasable ones, at the bottom, are in the game's files "
+        "but in no event, with a costume of a past year."
+    )
+    _render_shundo_board(
+        db_file_path, icons_folder_path, shundos_m.Board.COSTUMED_SHUNDOS
+    )

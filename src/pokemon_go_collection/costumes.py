@@ -45,6 +45,8 @@ class CostumedPokemon:
     # The year its costume belongs to: the one in the costume's name, or the
     # first one another Pokémon wore it in; None when neither gives one.
     costume_year: int | None
+    # The costumed Pokémon it evolves into, keeping its costume.
+    evolution_target_ids: tuple[str, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -113,6 +115,7 @@ def build_costume_catalog(
 
     keys = set(icon_file_names) | set(leekduck_shiny_releases) | set(release_dates)
     costume_years = find_costume_years(keys, release_dates)
+    evolution_target_keys = find_evolution_target_keys(keys, game_master)
     costumed_pokemons = [
         CostumedPokemon(
             costumed_pokemon_id=build_costumed_pokemon_id(key, species_ids),
@@ -140,6 +143,10 @@ def build_costume_catalog(
             ),
             bulbapedia_codes=tuple(bulbapedia_codes[key]),
             costume_year=costume_years[key],
+            evolution_target_ids=tuple(
+                build_costumed_pokemon_id(target_key, species_ids)
+                for target_key in evolution_target_keys[key]
+            ),
         )
         for key in keys
     ]
@@ -381,14 +388,68 @@ def _find_costume_name(key):
     return key.costume or (key.form_suffix if key.bulbapedia_code is None else None)
 
 
+def find_evolution_target_keys(keys, game_master):
+    """Return the costumed Pokémon each one evolves into, keeping its costume.
+
+    A costume evolves with its Pokémon, but a `_NOEVOLVE` one only on the forms
+    the game master allows it on; a costume form does not evolve. A costumed
+    Pokémon no source names the game name of evolves into the one of the same
+    Bulbapedia code.
+    """
+    forms = {form.form_id: form for form in game_master.forms}
+    dex_numbers = {form.species_id: form.dex_number for form in game_master.forms}
+    species_ids = {form.dex_number: form.species_id for form in game_master.forms}
+    evolution_target_keys = {}
+    for key in keys:
+        source_form = (
+            forms.get(_build_form_id(key, species_ids))
+            if key.dex_number in species_ids
+            and (key.costume is not None or key.bulbapedia_code is not None)
+            else None
+        )
+        if source_form is None or (
+            key.costume is not None
+            and "NOEVOLVE" in key.costume
+            and key.costume not in source_form.noevolve_costumes_allowed
+        ):
+            evolution_target_keys[key] = ()
+            continue
+        target_keys = []
+        for target_species_id, target_form_id in source_form.evolutions:
+            target_form_suffix = (
+                catalog_m.find_form_suffix(target_form_id, target_species_id)
+                if target_form_id is not None
+                else None
+            )
+            target_key = CostumedPokemonKey(
+                dex_numbers[target_species_id],
+                None if target_form_suffix == "NORMAL" else target_form_suffix,
+                key.costume,
+                key.bulbapedia_code,
+            )
+            if target_key in keys:
+                target_keys.append(target_key)
+        evolution_target_keys[key] = tuple(target_keys)
+    return evolution_target_keys
+
+
+def _build_form_id(key, species_ids):
+    """Return the game master form a costumed Pokémon wears its costume on.
+
+    A species the game master does not list yet, its repository lagging the
+    game, is named by its number: `#1025`.
+    """
+    species_id = species_ids.get(key.dex_number, f"#{key.dex_number}")
+    if key.form_suffix is None:
+        return species_id
+    return f"{species_id}_{key.form_suffix}"
+
+
 def build_costumed_pokemon_id(key, species_ids):
     """Return `PIKACHU.HOLIDAY_2016`, `PIKACHU_FALL_2019` for a costume form, or
     `ZUBAT.TopHat` from Bulbapedia's code for a costumed Pokémon no other source
     names yet."""
-    species_id = species_ids.get(key.dex_number, f"#{key.dex_number}")
-    form_id = (
-        f"{species_id}_{key.form_suffix}" if key.form_suffix is not None else species_id
-    )
+    form_id = _build_form_id(key, species_ids)
     if key.costume is not None:
         return f"{form_id}.{key.costume}"
     if key.bulbapedia_code is not None:
@@ -426,13 +487,11 @@ def _sort_key(costumed_pokemon):
     )
 
 
-def is_unreleasable(costumed_pokemon, today):
-    """Tell whether nothing suggests the costumed Pokémon will be released.
+def is_unreleasable(release_date, costume_year, today):
+    """Tell whether nothing suggests a costumed Pokémon will be released.
 
     It is in no event, and its costume belongs to a year before today's.
     """
     return (
-        costumed_pokemon.release_date is None
-        and costumed_pokemon.costume_year is not None
-        and costumed_pokemon.costume_year < today.year
+        release_date is None and costume_year is not None and costume_year < today.year
     )

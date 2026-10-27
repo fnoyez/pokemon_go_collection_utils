@@ -34,6 +34,10 @@ Bulbapedia names a costume by an image code of its own, which may stand for diff
 - **Unreleasable**: a costumed Pokémon in no event whose costume belongs to a year before today's, which nothing suggests will be released: Pichu in the cap of fall 2018, Mewtwo in Pikachu's cap of the first anniversary. The costume's year is the one in its name (`FALL_2018`), or else the first year a Pokémon wore it in an event (`ONE_YEAR_ANNIVERSARY`, worn by Pikachu in 2017). A costumed Pokémon in no event and of no past year is not released yet, like any other.
 - **Shiny released**: the date LeekDuck gives its shiny, or its release date when that is later, since LeekDuck dates some costumed shinies by their species' shiny. A costumed Pokémon LeekDuck lists no shiny of has none.
 
+## Evolutions
+
+A costumed Pokémon evolves into the costumed Pokémon of its evolution wearing the same costume, when the list holds it: a costume keeps through evolution, but a `_NOEVOLVE` one only on the forms the game master allows it on, and a costume form does not evolve. A costumed Pokémon identified by its Bulbapedia code evolves into the one of the same code.
+
 ## Names and order
 
 A costumed Pokémon is named after its species and its costume: `Pikachu (Holiday Hat)`, `Pumpkaboo (Small, Halloween)`. The costume's label is LeekDuck's when it lists one, Bulbapedia's otherwise, unless that label covers several costumes (`Cosplay Pikachu`), and the costume's name otherwise. A Bulbapedia label naming a Pokémon keeps its costume part: `Charmander wearing Friede's goggles` reads `Friede's goggles`.

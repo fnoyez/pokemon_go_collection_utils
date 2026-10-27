@@ -307,9 +307,12 @@ def load_service_forms(
 
 
 def load_hunt_targets(db_file_path, today):
-    board_entries = shundos_m.load_board_entries(db_file_path, today)
+    board_entries = shundos_m.load_board_entries(
+        db_file_path, shundos_m.Board.SHUNDOS, today
+    )
     hunt_entries = hunt_list_m.select_hunt_entries(
-        board_entries, hunt_list_m.load_evolution_edges(db_file_path)
+        board_entries,
+        hunt_list_m.load_evolution_edges(db_file_path, shundos_m.Board.SHUNDOS),
     )
     with db_m.db_conn(db_file_path) as conn:
         rows = conn.execute(

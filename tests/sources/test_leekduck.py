@@ -25,8 +25,10 @@ def get_parse_shiny_data_test_data():
                 leekduck_m.ShinyRelease(
                     dex_number=1,
                     form_suffix=None,
-                    is_costume=False,
+                    costume=None,
                     release_date=datetime.date(2018, 3, 25),
+                    asset_name="pm1",
+                    label=None,
                 )
             ],
         },
@@ -35,7 +37,7 @@ def get_parse_shiny_data_test_data():
             "content": make_json_text(
                 """
                 [
-                  {"dex": 83, "family": "Farfetchd_G", "released_date": "2021/08/20", "aa_fn": "pm83.fGALARIAN"}
+                  {"dex": 83, "family": "Farfetchd_G", "released_date": "2021/08/20", "aa_fn": "pm83.fGALARIAN", "name_suffix": "Galarian"}
                 ]
                 """
             ),
@@ -43,8 +45,10 @@ def get_parse_shiny_data_test_data():
                 leekduck_m.ShinyRelease(
                     dex_number=83,
                     form_suffix="GALARIAN",
-                    is_costume=False,
+                    costume=None,
                     release_date=datetime.date(2021, 8, 20),
+                    asset_name="pm83.fGALARIAN",
+                    label="Galarian",
                 )
             ],
         },
@@ -53,7 +57,7 @@ def get_parse_shiny_data_test_data():
             "content": make_json_text(
                 """
                 [
-                  {"dex": 77, "family": "Ponyta", "released_date": "2021/07/17", "aa_fn": "pm77.fGALARIAN.cGOFEST_2021_NOEVOLVE"},
+                  {"dex": 77, "family": "Ponyta", "released_date": "2021/07/17", "aa_fn": "pm77.fGALARIAN.cGOFEST_2021_NOEVOLVE", "name_suffix": "(G) Meloetta\\nHat"},
                   {"dex": 202, "family": "Wobbuffet", "released_date": "2019/10/17", "aa_fn": "pm202.g2"}
                 ]
                 """
@@ -62,14 +66,18 @@ def get_parse_shiny_data_test_data():
                 leekduck_m.ShinyRelease(
                     dex_number=77,
                     form_suffix="GALARIAN",
-                    is_costume=True,
+                    costume="GOFEST_2021_NOEVOLVE",
                     release_date=datetime.date(2021, 7, 17),
+                    asset_name="pm77.fGALARIAN.cGOFEST_2021_NOEVOLVE",
+                    label="(G) Meloetta Hat",
                 ),
                 leekduck_m.ShinyRelease(
                     dex_number=202,
                     form_suffix=None,
-                    is_costume=False,
+                    costume=None,
                     release_date=datetime.date(2019, 10, 17),
+                    asset_name="pm202.g2",
+                    label=None,
                 ),
             ],
         },

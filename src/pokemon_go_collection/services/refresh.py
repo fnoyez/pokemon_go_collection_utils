@@ -8,6 +8,7 @@ from pokemon_go_collection import catalog as catalog_m
 from pokemon_go_collection import db as db_m
 from pokemon_go_collection import pvp_ranks as pvp_ranks_m
 from pokemon_go_collection.sources import game_master as game_master_m
+from pokemon_go_collection.sources import git_repository as git_repository_m
 from pokemon_go_collection.sources import http as http_m
 from pokemon_go_collection.sources import icons as icons_m
 from pokemon_go_collection.sources import leekduck as leekduck_m
@@ -63,7 +64,7 @@ def run_refresh(cfg, now):
     warnings = []
     game_master_timestamp = None
     try:
-        pull_error_message = game_master_m.pull_game_master_repository(
+        pull_error_message = git_repository_m.pull_repository(
             cfg.game_master_repository_folder_path
         )
         if pull_error_message is not None:

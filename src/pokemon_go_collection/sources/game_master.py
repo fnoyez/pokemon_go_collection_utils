@@ -4,7 +4,6 @@ import enum
 import json
 import logging
 import re
-import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -63,19 +62,6 @@ class GameMaster:
     cp_multipliers: tuple[float, ...]
     # When the game master was published.
     timestamp: datetime.datetime
-
-
-def pull_game_master_repository(repository_folder_path):
-    """Fast-forward the game master repository; return an error message, or None."""
-    completed_process = subprocess.run(
-        ["git", "-C", str(repository_folder_path), "pull", "--ff-only"],
-        capture_output=True,
-        text=True,
-    )
-    if completed_process.returncode != 0:
-        return f"git pull of {repository_folder_path} failed: {completed_process.stderr.strip()}"
-    logger.info(f"Game master repository pulled: {completed_process.stdout.strip()}")
-    return None
 
 
 def load_game_master(repository_folder_path):

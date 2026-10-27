@@ -666,7 +666,7 @@ def find_shiny_release_dates(drafts, shiny_releases):
 
     shiny_release_dates = {}
     for shiny_release in shiny_releases:
-        if shiny_release.is_costume:
+        if shiny_release.costume is not None:
             continue
         suffix_key = (shiny_release.dex_number, shiny_release.form_suffix)
         if suffix_key not in entry_ids_by_suffix_key:

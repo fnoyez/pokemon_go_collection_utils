@@ -34,6 +34,7 @@ The sources' costume lists overlap without matching:
 ### Game master
 
 - The forms of a species are in its `formSettings` template; `pokemonSettings` templates, one per form, hold stats, types, `evolutionBranch`, `pokemonClass`, `tempEvoOverrides` and `allowNoevolveEvolution`.
+- Its upstream repository may go weeks without an update, during which the newest forms are missing from it.
 - It holds Pokémon ahead of their release; see [catalog.md](catalog.md), *Data sources*, for how this and the other sources' limits shape the catalog.
 
 ### pogo_assets
@@ -45,6 +46,8 @@ The sources' costume lists overlap without matching:
 ### LeekDuck shiny data
 
 - One row per shiny Pokémon: `dex`, `family`, `released_date` (`YYYY/MM/DD`, which may be in the future for an announced release), `aa_fn`, and for a form or costume `name_suffix`, its English label with line breaks (`Party\nHat`).
+- The `released_date` of some costumed Pokémon is that of their species' shiny, earlier than the costume itself: Shinx's Top Hat is dated 2018, two years before the costume.
+- The costume name in `aa_fn` may change from one fetch to the next, following the game's own naming: `pm25.cGOTOUR_2023_HAT` became `pm25.cGOTOUR_2023_HAT_NOEVOLVE`.
 
 ### pogocoordinates.com
 
@@ -53,4 +56,7 @@ The sources' costume lists overlap without matching:
 ### Bulbapedia, *Event Pokémon (GO)*
 
 - One table row per costume, sometimes spanning several rows for several families: the label, the Pokémon caught wearing it and those only obtained by evolution as `{{MSP/GO|size=80|<dex><code>|<name>}}` templates, and the events as a list of `* <event>: <dates>`, with `{{Shinystar/GO|Shiny possible}}` on those where a shiny was possible and notes such as `** Pikachu only`.
+- An event without an end gives its date in its text instead, `Since February 28, 2020, Pikachu Libre has served...`, and an announced one may give none, `''To be announced''`.
+- A sprite whose image is not uploaded yet has its code in a comment, `0025<!--0025Anniversary2026Thailand01-->`.
+- A costume released twice may count as two costumed Pokémon in the game, under one code: the 2019 and 2023 Detective Pikachus.
 - Its content is under the CC BY-NC-SA 2.5 licence.

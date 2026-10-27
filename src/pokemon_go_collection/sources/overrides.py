@@ -59,3 +59,37 @@ def load_release_overrides(file_path):
             )
             for row in csv.DictReader(file)
         }
+
+
+@dataclasses.dataclass(frozen=True)
+class CostumeMatch:
+    """The costumed Pokémon a sprite of Bulbapedia's list of event Pokémon stands for."""
+
+    dex_number: int
+    bulbapedia_code: str
+    # The form and the costume, as `costumes.CostumedPokemonKey` holds them;
+    # both None for a costumed Pokémon no source gives the game name of.
+    form_suffix: str | None
+    costume: str | None
+    # The costumed Pokémon's release, given when the sprite's events also cover
+    # another costumed Pokémon; None to take it from the events.
+    release_date: datetime.date | None
+
+
+def load_costume_matches(file_path):
+    """Return the matches in the file's order; a sprite may have several."""
+    with open(file_path, encoding="utf-8", newline="") as file:
+        return [
+            CostumeMatch(
+                dex_number=int(row["dex_number"]),
+                bulbapedia_code=row["bulbapedia_code"],
+                form_suffix=row["form_suffix"] or None,
+                costume=row["costume"] or None,
+                release_date=(
+                    datetime.date.fromisoformat(row["release_date"])
+                    if row["release_date"]
+                    else None
+                ),
+            )
+            for row in csv.DictReader(file)
+        ]

@@ -52,7 +52,7 @@ The sources' costume lists overlap without matching:
 
 ### pogocoordinates.com
 
-- Its form catalog lists a costume only while it spawns, flagged `live`, with `costume_id` and `costume_name`; the costume forms are listed all the time, with `live` telling which spawn now. A search asks for a costume by `costume_id` on the form, and each spawn found holds `costume_id` and `costume`. The calls themselves are in [spawn_watch.md](spawn_watch.md), *The service*.
+- Its form catalog lists a costume only while it spawns, flagged `live`, with `costume_id` and `costume_name`; the costume forms are listed all the time, with `live` telling which spawn now, except a few it lists as ordinary forms, without the costume flag or `live`: `ZUBAT_HALLOWEEN_2026_01`, the clones of the first movie, Psyduck's swim ring, the Goggles Charmander line. A search asks for a costume by `costume_id` on the form, and each spawn found holds `costume_id` and `costume`. The calls themselves are in [spawn_watch.md](spawn_watch.md), *The service*.
 
 ### Masterfile-Generator
 

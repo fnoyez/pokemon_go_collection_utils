@@ -61,7 +61,7 @@ def test_build_reveal_url_quotes_the_code():
     )
 
 
-def test_parse_form_catalog_reads_the_costumes_spawning_now():
+def test_parse_form_catalog_reads_the_costumes():
     content = json.loads(
         textwrap.dedent(
             """
@@ -83,7 +83,6 @@ def test_parse_form_catalog_reads_the_costumes_spawning_now():
             is_costume=True,
             costume_id=57,
             costume_name="FALL_2022",
-            is_live=True,
         ),
         pogocoordinates_m.ServiceForm(
             pokemon_id=25,
@@ -93,7 +92,6 @@ def test_parse_form_catalog_reads_the_costumes_spawning_now():
             is_costume=True,
             costume_id=None,
             costume_name=None,
-            is_live=False,
         ),
         pogocoordinates_m.ServiceForm(
             pokemon_id=19,
@@ -103,6 +101,5 @@ def test_parse_form_catalog_reads_the_costumes_spawning_now():
             is_costume=False,
             costume_id=None,
             costume_name=None,
-            is_live=False,
         ),
     ]

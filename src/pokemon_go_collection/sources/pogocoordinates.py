@@ -37,8 +37,6 @@ class ServiceForm:
     # which the service lists only while it spawns; None for a form.
     costume_id: int | None = None
     costume_name: str | None = None
-    # Whether the costume, or the costume form, spawns now.
-    is_live: bool = False
 
 
 @dataclasses.dataclass(frozen=True)
@@ -76,7 +74,6 @@ def parse_form_catalog(content):
             is_costume=bool(row.get("costume")),
             costume_id=row.get("costume_id"),
             costume_name=row.get("costume_name"),
-            is_live=bool(row.get("live")),
         )
         for row in content
     ]

@@ -441,10 +441,10 @@ def build_search_spec(hunt_targets, service_forms):
 def find_costumed_search_keys(target, service_forms):
     """Return the (Pokédex number, form, costume) the service searches a costumed Pokémon by.
 
-    Only a costume spawning now is searched for: the service lists a costume
-    worn on a form only then, and flags a costume form spawning now as live. A
-    costume form the service lists as an ordinary form, which it never flags
-    live, is searched for as one.
+    A costume form is searched for whether it spawns now or not, by its form
+    identifier, the service flagging it as a costume or not. A costume worn on
+    a form is searched for when the service lists it, which is only while it
+    spawns.
     """
     if target.costume is not None:
         return {
@@ -452,14 +452,12 @@ def find_costumed_search_keys(target, service_forms):
             for service_form in service_forms
             if service_form.pokemon_id == target.dex_number
             and service_form.costume_name == target.costume
-            and service_form.is_live
         }
     return {
         (service_form.pokemon_id, service_form.form_id, None)
         for service_form in service_forms
         if service_form.form_name == target.form_ids[0]
         and service_form.costume_id is None
-        and (service_form.is_live or not service_form.is_costume)
     }
 
 

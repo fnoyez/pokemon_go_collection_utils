@@ -16,10 +16,9 @@ from pokemon_go_collection.sources import pogocoordinates as pogocoordinates_m
 NOW = datetime.datetime(2026, 10, 10, 20, 0, tzinfo=datetime.timezone.utc)
 
 # Rattata with an Alolan form, Zorua with a Hisuian form, Unown with letters
-# only, Pikachu with costume forms, one spawning now, Vulpix with a costume
-# spawning now, Zubat with a costume form the service lists as an ordinary
-# form, and Basculegion, which the service lists under forms the catalog does
-# not know.
+# only, Pikachu with costume forms, Vulpix with a costume spawning now, Zubat
+# with a costume form the service lists as an ordinary form, and Basculegion,
+# which the service lists under forms the catalog does not know.
 SERVICE_FORMS = [
     pogocoordinates_m.ServiceForm(
         pokemon_id=19,
@@ -90,7 +89,6 @@ SERVICE_FORMS = [
         form_name="PIKACHU_HALLOWEEN_2026",
         form_suffix="HALLOWEEN_2026",
         is_costume=True,
-        is_live=True,
     ),
     pogocoordinates_m.ServiceForm(
         pokemon_id=37,
@@ -100,7 +98,6 @@ SERVICE_FORMS = [
         is_costume=True,
         costume_id=57,
         costume_name="FALL_2022",
-        is_live=True,
     ),
     pogocoordinates_m.ServiceForm(
         pokemon_id=41,
@@ -199,16 +196,16 @@ def get_build_search_spec_test_data():
             "expected_species_forms": [(570, 2108, None)],
         },
         {
-            "id": "costumes-spawning-now-asked-for-by-costume-or-form",
+            "id": "costumes-asked-for-by-costume-or-form",
             "hunt_targets": [VULPIX_FALL_2022, PIKACHU_HALLOWEEN_2026],
             "expected_pokemon_ids": [],
             "expected_species_forms": [(25, 3379, None), (37, 55, 57)],
         },
         {
-            "id": "costume-form-not-spawning-not-asked-for",
+            "id": "costume-form-not-spawning-asked-for",
             "hunt_targets": [PIKACHU_FALL_2019],
             "expected_pokemon_ids": [],
-            "expected_species_forms": [],
+            "expected_species_forms": [(25, 894, None)],
         },
         {
             "id": "costume-form-listed-as-ordinary-form-asked-for",

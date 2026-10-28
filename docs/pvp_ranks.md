@@ -75,6 +75,7 @@ The tree of a Pokémon is the set of entries connected to it through evolutions,
 - **Baby Pokémon are left out of a tree**: Pikachu's tree is Pikachu and Raichu, without Pichu.
 - **A baby Pokémon, a Mega or Primal evolution, or a battle form**, chosen in the section, is a tree of its own, of which it is the only member.
 - **A regional form no evolution leads to**, such as Alolan Exeggutor, is the only member of its tree as a consequence.
+- **An evolution the game master gives no `evolutionBranch` for links nothing**: Duraludon's tree is Duraludon alone, without Archaludon. [data_sources.md](data_sources.md), *Game master*, lists the families in that case.
 
 #### Names
 

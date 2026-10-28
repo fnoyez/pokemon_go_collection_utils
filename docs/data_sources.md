@@ -35,6 +35,7 @@ The sources' costume lists overlap without matching:
 
 - The forms of a species are in its `formSettings` template; `pokemonSettings` templates, one per form, hold stats, types, `evolutionBranch`, `pokemonClass`, `tempEvoOverrides` and `allowNoevolveEvolution`.
 - It is decoded from each game version within days of it. A form the decoder's protocol definitions do not name yet is given by its number, `3362`, in the species' `formSettings` and in the `evolutionBranch` leading to it; the template identifier of its own `pokemonSettings` carries its name, `V0041_POKEMON_ZUBAT_HALLOWEEN_2026_01`.
+- `evolutionBranch` lists the evolutions a player can perform in Pokémon GO, which leaves out a main-series evolution needing a mechanic the game lacks, even when the game master holds the evolved Pokémon. Three families are in that case: Duraludon has no branch to Archaludon (an item, Metal Alloy), Girafarig none to Farigiraf (a move, Twin Beam), Stantler none to Wyrdeer (a move, Barb Barrage). Each pair shares its `familyId`; Farigiraf and Wyrdeer name their pre-evolution in `parentPokemonId`, Archaludon does not.
 - It holds Pokémon ahead of their release; see [catalog.md](catalog.md), *Data sources*, for how this and the other sources' limits shape the catalog.
 
 ### UICONS

@@ -442,7 +442,9 @@ def find_costumed_search_keys(target, service_forms):
     """Return the (Pokédex number, form, costume) the service searches a costumed Pokémon by.
 
     Only a costume spawning now is searched for: the service lists a costume
-    worn on a form only then, and flags a costume form spawning now as live.
+    worn on a form only then, and flags a costume form spawning now as live. A
+    costume form the service lists as an ordinary form, which it never flags
+    live, is searched for as one.
     """
     if target.costume is not None:
         return {
@@ -457,7 +459,7 @@ def find_costumed_search_keys(target, service_forms):
         for service_form in service_forms
         if service_form.form_name == target.form_ids[0]
         and service_form.costume_id is None
-        and service_form.is_live
+        and (service_form.is_live or not service_form.is_costume)
     }
 
 
@@ -499,7 +501,14 @@ def match_spawns(
     service_forms_by_dex_number = {}
     costume_service_forms_by_dex_number = {}
     for service_form in service_forms:
-        if not service_form.is_costume:
+        # The service lists some costume forms as ordinary forms, such as
+        # `ZUBAT_HALLOWEEN_2026_01`.
+        is_costume_form = (
+            service_form.is_costume
+            or (service_form.pokemon_id, service_form.form_name)
+            in costumed_targets_by_form_key
+        )
+        if not is_costume_form:
             service_forms_by_dex_number.setdefault(service_form.pokemon_id, []).append(
                 service_form
             )

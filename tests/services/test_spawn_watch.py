@@ -17,8 +17,9 @@ NOW = datetime.datetime(2026, 10, 10, 20, 0, tzinfo=datetime.timezone.utc)
 
 # Rattata with an Alolan form, Zorua with a Hisuian form, Unown with letters
 # only, Pikachu with costume forms, one spawning now, Vulpix with a costume
-# spawning now, and Basculegion, which the service lists under forms the
-# catalog does not know.
+# spawning now, Zubat with a costume form the service lists as an ordinary
+# form, and Basculegion, which the service lists under forms the catalog does
+# not know.
 SERVICE_FORMS = [
     pogocoordinates_m.ServiceForm(
         pokemon_id=19,
@@ -101,6 +102,20 @@ SERVICE_FORMS = [
         costume_name="FALL_2022",
         is_live=True,
     ),
+    pogocoordinates_m.ServiceForm(
+        pokemon_id=41,
+        form_id=157,
+        form_name="ZUBAT_NORMAL",
+        form_suffix=None,
+        is_costume=False,
+    ),
+    pogocoordinates_m.ServiceForm(
+        pokemon_id=41,
+        form_id=3362,
+        form_name="ZUBAT_HALLOWEEN_2026_01",
+        form_suffix="HALLOWEEN_2026_01",
+        is_costume=False,
+    ),
 ]
 
 RATTATA_ALOLA = spawn_watch_m.HuntTarget(
@@ -146,6 +161,16 @@ VULPIX_FALL_2022 = spawn_watch_m.HuntTarget(
     is_costumed=True,
     costume="FALL_2022",
 )
+ZUBAT = spawn_watch_m.HuntTarget(
+    entry_id="ZUBAT", dex_number=41, name="Zubat", form_ids=("ZUBAT_NORMAL", "ZUBAT")
+)
+ZUBAT_HALLOWEEN_2026_01 = spawn_watch_m.HuntTarget(
+    entry_id="ZUBAT_HALLOWEEN_2026_01",
+    dex_number=41,
+    name="Zubat (Top Hat)",
+    form_ids=("ZUBAT_HALLOWEEN_2026_01",),
+    is_costumed=True,
+)
 BASCULEGION = spawn_watch_m.HuntTarget(
     entry_id="BASCULEGION",
     dex_number=902,
@@ -184,6 +209,12 @@ def get_build_search_spec_test_data():
             "hunt_targets": [PIKACHU_FALL_2019],
             "expected_pokemon_ids": [],
             "expected_species_forms": [],
+        },
+        {
+            "id": "costume-form-listed-as-ordinary-form-asked-for",
+            "hunt_targets": [ZUBAT_HALLOWEEN_2026_01],
+            "expected_pokemon_ids": [],
+            "expected_species_forms": [(41, 3362, None)],
         },
     ]
 
@@ -372,6 +403,11 @@ def get_match_spawns_test_data():
             "spawns": [make_spawn("1", 25, form="Fall 2019")],
             "expected_matches": [],
         },
+        {
+            "id": "costume-form-listed-as-ordinary-form-on-hunt-list",
+            "spawns": [make_spawn("1", 41, form="Halloween 2026 01")],
+            "expected_matches": [("1", "ZUBAT_HALLOWEEN_2026_01", True)],
+        },
     ]
 
     return [
@@ -395,6 +431,8 @@ def test_match_spawns(spawns, expected_matches):
             ZORUA,
             VULPIX_FALL_2022,
             PIKACHU_HALLOWEEN_2026,
+            ZUBAT,
+            ZUBAT_HALLOWEEN_2026_01,
         ],
         SERVICE_FORMS,
         NOW,

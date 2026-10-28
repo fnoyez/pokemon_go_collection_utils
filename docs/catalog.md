@@ -24,7 +24,7 @@ Three limits of the sources shape the rules below:
 An entry is a species, or one of its forms that is a distinct Pokémon. Every species of the National Pokédex seed has a base entry; the game master then decides which of its forms are entries of their own.
 
 - **The base form** of a species is its `<SPECIES>_NORMAL` form when the game master has one, its formless settings otherwise. The base entry's identifier is the species identifier (`FARFETCHD`).
-- **Costumes are not entries**: a form the game master flags `isCostume` belongs to no entry, unless a `distinct` override makes it one. The costumed Pokémon are described in [costumes.md](costumes.md).
+- **Costumes are not entries**: a costume form belongs to no entry, unless a `distinct` override makes it one. Which forms are costume forms, and the costumed Pokémon, are described in [costumes.md](costumes.md), *What tells a costumed Pokémon apart*.
 - **A regional form is always an entry.** A form is regional when its identifier carries a region token: `ALOLA`, `GALARIAN`, `HISUIAN`, `PALDEA`. The three Paldean Tauros breeds are three entries.
 - **Any other form is an entry when it differs from the base form** in its stats, its types, or the entries it evolves into (a form with no evolution at all does not count as differing by it). Each such form is an entry of its own, even when two of them share their stats and types: Black and White Kyurem do. A form not differing from the base form belongs to the base entry: Keldeo's Resolute Form is part of the Keldeo entry.
 - **`data/form_overrides.csv` corrects these rules form by form**, each line stating its reason:

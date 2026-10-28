@@ -100,12 +100,13 @@ def build_catalog(
     national_dex_species,
     game_master,
     form_overrides,
+    costume_matches,
     pvpoke_species,
     shiny_releases,
     release_overrides,
 ):
     drafts, evolution_edges = build_entry_drafts(
-        national_dex_species, game_master, form_overrides
+        national_dex_species, game_master, form_overrides, costume_matches
     )
     ordered_drafts = order_entry_drafts(drafts, evolution_edges)
     baby_dex_numbers = {
@@ -179,7 +180,9 @@ class EntryDraft:
     battle_forms: tuple[BattleForm, ...]
 
 
-def build_entry_drafts(national_dex_species, game_master, form_overrides):
+def build_entry_drafts(
+    national_dex_species, game_master, form_overrides, costume_matches
+):
     """Return the entry drafts in National Pokédex order, and the evolution edges.
 
     The edges map an entry identifier to the identifiers of the entries it
@@ -188,12 +191,13 @@ def build_entry_drafts(national_dex_species, game_master, form_overrides):
     forms_by_dex_number = collections.defaultdict(list)
     for form in game_master.forms:
         forms_by_dex_number[form.dex_number].append(form)
+    costume_form_ids = find_costume_form_ids(game_master, costume_matches)
 
     layouts = [
         _lay_out_species(
             species,
             forms_by_dex_number.get(species.dex_number, []),
-            game_master.costume_form_ids,
+            costume_form_ids,
             form_overrides,
         )
         for species in national_dex_species
@@ -230,6 +234,25 @@ def build_entry_drafts(national_dex_species, game_master, form_overrides):
     return drafts, dict(evolution_edges)
 
 
+def find_costume_form_ids(game_master, costume_matches):
+    """Return the identifiers of the game master's costume forms, as docs/costumes.md defines them.
+
+    They are the forms the game master flags as costumes, and those a match
+    names without a costume, which the game master does not flag.
+    """
+    match_form_keys = {
+        (match.dex_number, match.form_suffix)
+        for match in costume_matches
+        if match.form_suffix is not None and match.costume is None
+    }
+    return game_master.costume_form_ids | {
+        form.form_id
+        for form in game_master.forms
+        if (form.dex_number, find_form_suffix(form.form_id, form.species_id))
+        in match_form_keys
+    }
+
+
 @dataclasses.dataclass(frozen=True)
 class _SpeciesLayout:
     species: object
@@ -252,6 +275,13 @@ class _SpeciesLayout:
     # identifier: its game master position, or, for a species whose base form
     # an override chooses, the position of its override line.
     form_orders: dict
+
+
+def find_form_suffix(form_id, species_id):
+    """Return the form identifier without its species prefix, or None for the species itself."""
+    if form_id == species_id:
+        return None
+    return form_id.removeprefix(f"{species_id}_")
 
 
 def _lay_out_species(species, species_forms, costume_form_ids, form_overrides):
@@ -334,13 +364,6 @@ def _find_form_region(form):
     if suffix is None:
         return None
     return regions_m.find_regional_form_region(suffix.split("_"))
-
-
-def find_form_suffix(form_id, species_id):
-    """Return the form identifier without its species prefix, or None for the species itself."""
-    if form_id == species_id:
-        return None
-    return form_id.removeprefix(f"{species_id}_")
 
 
 def _find_form_orders(forms, form_overrides, is_base_form_overridden):

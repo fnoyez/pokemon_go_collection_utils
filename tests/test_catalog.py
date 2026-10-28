@@ -13,7 +13,8 @@ from pokemon_go_collection.sources import pvpoke as pvpoke_m
 # A small world exercising each catalog rule: a regional form with an
 # exclusive evolution (Farfetch'd), an evolution the base form reaches
 # (Scyther -> Kleavor), forms distinct by their types (Wormadam) or by their
-# evolutions only (Burmy), a costume (Pikachu), cosmetic forms (Unown), and a
+# evolutions only (Burmy), costume forms, one the game master flags and one a
+# costume match names (Pikachu), cosmetic forms (Unown), and a
 # form an override makes distinct, evolving into a species the game master
 # does not hold yet (white-striped Basculin -> Basculegion).
 
@@ -127,6 +128,7 @@ GAME_MASTER = game_master_m.GameMaster(
             ),
         ),
         make_form("PIKACHU_FALL_2019", "PIKACHU", 25, (112, 96, 111), ("ELECTRIC",)),
+        make_form("PIKACHU_COPY_2019", "PIKACHU", 25, (112, 96, 111), ("ELECTRIC",)),
         make_form("FARFETCHD", "FARFETCHD", 83, (124, 115, 141), ("NORMAL", "FLYING")),
         make_form(
             "FARFETCHD_NORMAL", "FARFETCHD", 83, (124, 115, 141), ("NORMAL", "FLYING")
@@ -201,6 +203,16 @@ FORM_OVERRIDES = {
     ),
 }
 
+COSTUME_MATCHES = [
+    overrides_m.CostumeMatch(
+        dex_number=25,
+        bulbapedia_code="Copy2019",
+        form_suffix="COPY_2019",
+        costume=None,
+        release_date=None,
+    ),
+]
+
 PVPOKE_SPECIES = [
     pvpoke_m.PvpokeSpecies(dex_number=25, species_id="pikachu", is_released=True),
     pvpoke_m.PvpokeSpecies(
@@ -262,6 +274,7 @@ def test_build_catalog_orders_entries():
         NATIONAL_DEX_SPECIES,
         GAME_MASTER,
         FORM_OVERRIDES,
+        COSTUME_MATCHES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
         RELEASE_OVERRIDES,
@@ -295,6 +308,7 @@ def test_build_catalog_names_entries_and_merges_forms():
         NATIONAL_DEX_SPECIES,
         GAME_MASTER,
         FORM_OVERRIDES,
+        COSTUME_MATCHES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
         RELEASE_OVERRIDES,
@@ -318,6 +332,7 @@ def test_build_catalog_takes_the_temporary_evolutions_of_the_representative_form
         NATIONAL_DEX_SPECIES,
         GAME_MASTER,
         FORM_OVERRIDES,
+        COSTUME_MATCHES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
         RELEASE_OVERRIDES,
@@ -338,6 +353,7 @@ def test_build_catalog_links_evolutions():
         NATIONAL_DEX_SPECIES,
         GAME_MASTER,
         FORM_OVERRIDES,
+        COSTUME_MATCHES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
         RELEASE_OVERRIDES,
@@ -422,6 +438,7 @@ def test_build_catalog_splits_a_species_whose_base_form_an_override_chooses():
         national_dex_species,
         game_master,
         form_overrides,
+        costume_matches=[],
         pvpoke_species=[],
         shiny_releases=[],
         release_overrides={},
@@ -489,6 +506,7 @@ def test_build_catalog_makes_an_entry_of_a_costume_form_an_override_makes_distin
         national_dex_species,
         game_master,
         form_overrides,
+        costume_matches=[],
         pvpoke_species=[],
         shiny_releases=[],
         release_overrides={},
@@ -530,6 +548,7 @@ def test_build_catalog_names_a_form_by_its_symbol():
         unown_species,
         game_master,
         form_overrides,
+        costume_matches=[],
         pvpoke_species=[],
         shiny_releases=[],
         release_overrides={},
@@ -578,6 +597,7 @@ def test_build_catalog_takes_the_battle_forms_overrides_merge_with_their_own_sta
         minior_species,
         game_master,
         form_overrides,
+        costume_matches=[],
         pvpoke_species=[],
         shiny_releases=[],
         release_overrides={},
@@ -726,6 +746,7 @@ def test_build_catalog_statuses(
         NATIONAL_DEX_SPECIES,
         GAME_MASTER,
         FORM_OVERRIDES,
+        COSTUME_MATCHES,
         PVPOKE_SPECIES,
         SHINY_RELEASES,
         RELEASE_OVERRIDES,

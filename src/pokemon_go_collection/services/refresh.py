@@ -115,11 +115,15 @@ def run_refresh(cfg, now):
         form_overrides = overrides_m.load_form_overrides(
             cfg.data_folder_path / "form_overrides.csv"
         )
+        costume_matches = overrides_m.load_costume_matches(
+            cfg.data_folder_path / "costume_matches.csv"
+        )
         shiny_releases = leekduck_m.parse_shiny_data(leekduck_content)
         entries = catalog_m.build_catalog(
             national_dex_species,
             game_master,
             form_overrides,
+            costume_matches,
             pvpoke_m.parse_pvpoke_game_master(pvpoke_content),
             shiny_releases,
             overrides_m.load_release_overrides(
@@ -133,9 +137,7 @@ def run_refresh(cfg, now):
             uicons_m.parse_index(uicons_index_content, game_numbers),
             shiny_releases,
             bulbapedia_m.parse_event_pokemon(bulbapedia_content.decode("utf-8")),
-            overrides_m.load_costume_matches(
-                cfg.data_folder_path / "costume_matches.csv"
-            ),
+            costume_matches,
             game_numbers,
         )
         warnings.extend(build_costume_match_warnings(costume_catalog))

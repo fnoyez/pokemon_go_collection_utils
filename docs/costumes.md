@@ -34,7 +34,7 @@ Bulbapedia names a costume by an image code of its own, which may stand for diff
 
 ## Evolutions
 
-A costumed Pokémon evolves into the costumed Pokémon of its evolution wearing the same costume, when the list holds it: a costume keeps through evolution, but a `_NOEVOLVE` one only on the forms the game master allows it on, and a costume form does not evolve. A costumed Pokémon identified by its Bulbapedia code evolves into the one of the same code.
+A costumed Pokémon evolves into the costumed Pokémon of its evolution wearing the same costume, when the list holds it: a costume keeps through evolution, but a `_NOEVOLVE` one only on the forms the game master allows it on. A costume form evolves into the forms the game master's settings of it name, such as Top Hat Zubat into Top Hat Golbat. A costumed Pokémon identified by its Bulbapedia code evolves into the one of the same code.
 
 ## Names and order
 

@@ -468,16 +468,19 @@ def test_build_costume_catalog_merges_the_sources():
     assert costume_catalog.unused_matches == (make_match(25, "Gone", None, "GONE"),)
 
 
-def make_form(form_id, species_id, dex_number):
+def make_form(
+    form_id, species_id, dex_number, evolutions=(), noevolve_costumes_allowed=()
+):
     return game_master_m.PokemonForm(
         form_id=form_id,
         species_id=species_id,
         dex_number=dex_number,
         stats=(100, 100, 100),
         types=("POKEMON_TYPE_NORMAL",),
-        evolutions=(),
+        evolutions=evolutions,
         pokemon_class=None,
         temporary_evolutions=(),
+        noevolve_costumes_allowed=noevolve_costumes_allowed,
     )
 
 
@@ -601,5 +604,113 @@ def test_find_game_order(key, expected_output):
     actual_output = costumes_m.find_game_order(
         key, {25: "PIKACHU", 710: "PUMPKABOO"}, game_numbers
     )
+
+    assert actual_output == expected_output
+
+
+def get_find_evolution_target_keys_test_data():
+    test_cases = [
+        {
+            "id": "costume-keeps-through-evolution",
+            "key": costumes_m.CostumedPokemonKey(25, None, "HOLIDAY_2016"),
+            "expected_output": (
+                costumes_m.CostumedPokemonKey(26, None, "HOLIDAY_2016"),
+            ),
+        },
+        {
+            "id": "noevolve-costume-allowed-on-the-form",
+            "key": costumes_m.CostumedPokemonKey(25, None, "FALL_2018_NOEVOLVE"),
+            "expected_output": (
+                costumes_m.CostumedPokemonKey(26, None, "FALL_2018_NOEVOLVE"),
+            ),
+        },
+        {
+            "id": "noevolve-costume-not-allowed-on-the-form",
+            "key": costumes_m.CostumedPokemonKey(25, None, "JAN_2020_NOEVOLVE"),
+            "expected_output": (),
+        },
+        {
+            "id": "costume-form-evolves-into-the-form-named",
+            "key": costumes_m.CostumedPokemonKey(41, "HALLOWEEN_2026_01", None),
+            "expected_output": (
+                costumes_m.CostumedPokemonKey(42, "HALLOWEEN_2026_01", None),
+            ),
+        },
+        {
+            "id": "costume-form-of-the-last-stage",
+            "key": costumes_m.CostumedPokemonKey(169, "HALLOWEEN_2026_01", None),
+            "expected_output": (),
+        },
+        {
+            "id": "named-by-bulbapedia-only",
+            "key": costumes_m.CostumedPokemonKey(41, None, None, "TopHat"),
+            "expected_output": (
+                costumes_m.CostumedPokemonKey(42, None, None, "TopHat"),
+            ),
+        },
+    ]
+
+    return [
+        pytest.param(test_case["key"], test_case["expected_output"], id=test_case["id"])
+        for test_case in test_cases
+    ]
+
+
+@pytest.mark.parametrize(
+    "key,expected_output", get_find_evolution_target_keys_test_data()
+)
+def test_find_evolution_target_keys(key, expected_output):
+    game_master = game_master_m.GameMaster(
+        forms=(
+            make_form(
+                "PIKACHU",
+                "PIKACHU",
+                25,
+                evolutions=(("RAICHU", None),),
+                noevolve_costumes_allowed=("FALL_2018_NOEVOLVE",),
+            ),
+            make_form("RAICHU", "RAICHU", 26),
+            make_form("ZUBAT", "ZUBAT", 41, evolutions=(("GOLBAT", None),)),
+            make_form(
+                "ZUBAT_HALLOWEEN_2026_01",
+                "ZUBAT",
+                41,
+                evolutions=(("GOLBAT", "GOLBAT_HALLOWEEN_2026_01"),),
+            ),
+            make_form("GOLBAT", "GOLBAT", 42, evolutions=(("CROBAT", None),)),
+            make_form(
+                "GOLBAT_HALLOWEEN_2026_01",
+                "GOLBAT",
+                42,
+                evolutions=(("CROBAT", "CROBAT_HALLOWEEN_2026_01"),),
+            ),
+            make_form("CROBAT", "CROBAT", 169),
+            make_form("CROBAT_HALLOWEEN_2026_01", "CROBAT", 169),
+        ),
+        costume_form_ids=frozenset(
+            {
+                "ZUBAT_HALLOWEEN_2026_01",
+                "GOLBAT_HALLOWEEN_2026_01",
+                "CROBAT_HALLOWEEN_2026_01",
+            }
+        ),
+        cp_multipliers=(),
+        timestamp=datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
+    )
+    keys = {
+        costumes_m.CostumedPokemonKey(25, None, "HOLIDAY_2016"),
+        costumes_m.CostumedPokemonKey(26, None, "HOLIDAY_2016"),
+        costumes_m.CostumedPokemonKey(25, None, "FALL_2018_NOEVOLVE"),
+        costumes_m.CostumedPokemonKey(26, None, "FALL_2018_NOEVOLVE"),
+        costumes_m.CostumedPokemonKey(25, None, "JAN_2020_NOEVOLVE"),
+        costumes_m.CostumedPokemonKey(26, None, "JAN_2020_NOEVOLVE"),
+        costumes_m.CostumedPokemonKey(41, "HALLOWEEN_2026_01", None),
+        costumes_m.CostumedPokemonKey(42, "HALLOWEEN_2026_01", None),
+        costumes_m.CostumedPokemonKey(169, "HALLOWEEN_2026_01", None),
+        costumes_m.CostumedPokemonKey(41, None, None, "TopHat"),
+        costumes_m.CostumedPokemonKey(42, None, None, "TopHat"),
+    }
+
+    actual_output = costumes_m.find_evolution_target_keys(keys, game_master)[key]
 
     assert actual_output == expected_output

@@ -399,13 +399,7 @@ def _find_costume_name(key):
 
 
 def find_evolution_target_keys(keys, game_master):
-    """Return the costumed Pokémon each one evolves into, keeping its costume.
-
-    A costume evolves with its Pokémon, but a `_NOEVOLVE` one only on the forms
-    the game master allows it on; a costume form evolves into the forms its
-    game master settings name. A costumed Pokémon no source names the game name
-    of evolves into the one of the same Bulbapedia code.
-    """
+    """Return the costumed Pokémon each one evolves into, as docs/costumes.md, *Evolutions*, defines it."""
     forms = {form.form_id: form for form in game_master.forms}
     dex_numbers = {form.species_id: form.dex_number for form in game_master.forms}
     species_ids = {form.dex_number: form.species_id for form in game_master.forms}

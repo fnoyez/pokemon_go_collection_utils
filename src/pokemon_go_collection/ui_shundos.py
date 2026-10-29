@@ -51,7 +51,9 @@ def _render_shundo_board(db_file_path, icons_folder_path, board):
     _render_totals(board_entries)
     if board == shundos_m.Board.SHUNDOS:
         _render_hunt_list_download(db_file_path, board_entries)
-    filter_column, search_column = st.columns([1, 2])
+    filter_column, search_column, line_column = st.columns(
+        [1, 2, 1], vertical_alignment="bottom"
+    )
     with filter_column:
         board_filter = BoardFilter(
             st.segmented_control(
@@ -64,12 +66,24 @@ def _render_shundo_board(db_file_path, icons_folder_path, board):
         )
     with search_column:
         search_text = st.text_input("Search", key=f"{_GRID_KEYS[board]}_search")
+    with line_column:
+        is_full_line_shown = st.checkbox(
+            "Show full evolutionary line",
+            key=f"{_GRID_KEYS[board]}_full_line",
+            help=(
+                "Shows every Pokémon of the evolutionary line of a Pokémon whose "
+                "name matches the search."
+            ),
+        )
 
+    searched_entry_ids = _find_searched_entry_ids(
+        db_file_path, board, board_entries, search_text, is_full_line_shown
+    )
     groups = build_grid_groups(
         board_entries,
         _find_icon_versions(icons_folder_path),
         _FILTER_STATES[board_filter],
-        search_text,
+        searched_entry_ids,
     )
     if not groups:
         st.info("No Pokémon matches.")
@@ -112,22 +126,37 @@ def _render_hunt_list_download(db_file_path, board_entries):
     )
 
 
-def build_grid_groups(board_entries, icon_versions, shown_states, search_text):
+def _find_searched_entry_ids(
+    db_file_path, board, board_entries, search_text, is_full_line_shown
+):
+    """Return the identifiers of the entries whose name holds `search_text`, with their evolutionary lines if asked."""
+    normalized_search_text = search_text.strip().lower()
+    searched_entry_ids = {
+        entry.entry_id
+        for entry in board_entries
+        if normalized_search_text in entry.name.lower()
+    }
+    if is_full_line_shown:
+        searched_entry_ids = shundos_m.collect_evolution_lines(
+            hunt_list_m.load_evolution_edges(db_file_path, board), searched_entry_ids
+        )
+    return searched_entry_ids
+
+
+def build_grid_groups(board_entries, icon_versions, shown_states, searched_entry_ids):
     """Group the entries shown by region, each region's variant block in a section of its own.
 
-    `icon_versions` maps each icon file name to its version, from
+    An entry is shown when its state is among `shown_states` and its identifier
+    among `searched_entry_ids`. `icon_versions` maps each icon file name to its version, from
     `_find_icon_versions`. The unreleasable entries make a last group of their
     own, after the regions.
 
     Each region's summary counts its owned and markable entries over the whole
     board, whatever the filter shows.
     """
-    normalized_search_text = search_text.strip().lower()
 
     def is_shown(entry):
-        return (
-            entry.state in shown_states and normalized_search_text in entry.name.lower()
-        )
+        return entry.state in shown_states and entry.entry_id in searched_entry_ids
 
     groups = []
     for region in regions_m.Region:

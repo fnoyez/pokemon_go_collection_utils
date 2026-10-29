@@ -86,4 +86,4 @@ Marking a shundo is a click on the Pokémon's icon. Streamlit's own widgets cann
 - A click on a markable icon toggles it in the browser immediately. The component then sends Python the ownership asked for every entry clicked since the page was loaded, and Python makes `SHUNDO` match it. Sending the whole mapping rather than the last click is what keeps rapid clicks safe: Streamlit may coalesce several events into one rerun, and the mapping still holds each of them.
 - The tab redraws inside a Streamlit fragment, so a click does not rerun the rest of the page.
 
-The tab around the grid holds a filter (all, missing, owned), a search on names, and the count of owned and markable entries per region.
+The tab around the grid holds a filter (all, missing, owned), a search on names, a checkbox widening the search to the whole evolutionary line of each Pokémon it matches, and the count of owned and markable entries per region.

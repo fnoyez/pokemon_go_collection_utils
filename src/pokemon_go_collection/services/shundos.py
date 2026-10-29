@@ -1,3 +1,4 @@
+import collections
 import dataclasses
 import datetime
 import enum
@@ -178,3 +179,26 @@ def find_entry_state(is_released, shiny_release_date, is_owned, today):
     if catalog_m.is_entry_released(is_released, shiny_release_date, today):
         return EntryState.NO_SHINY
     return EntryState.UNRELEASED
+
+
+def collect_evolution_lines(evolution_edges, entry_ids):
+    """Return the identifiers of every entry in the evolutionary line of one of `entry_ids`.
+
+    `evolution_edges` maps an entry identifier to the entries it evolves into.
+    A line holds every entry an evolution links to another of the line, in
+    either direction: Vaporeon's holds Eevee and all its other evolutions.
+    """
+    linked_entry_ids = collections.defaultdict(set)
+    for source_entry_id, target_entry_ids in evolution_edges.items():
+        for target_entry_id in target_entry_ids:
+            linked_entry_ids[source_entry_id].add(target_entry_id)
+            linked_entry_ids[target_entry_id].add(source_entry_id)
+
+    line_entry_ids = set()
+    pending_entry_ids = list(entry_ids)
+    while pending_entry_ids:
+        entry_id = pending_entry_ids.pop()
+        if entry_id not in line_entry_ids:
+            line_entry_ids.add(entry_id)
+            pending_entry_ids.extend(linked_entry_ids[entry_id])
+    return line_entry_ids
